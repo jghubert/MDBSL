@@ -46,6 +46,7 @@ namespace MDB_Social {
         unsigned maxTimeOnReward;
         bool useTracesWhenLightVisible;
         bool useSeeTheLightInputs;
+        bool showFastSimViewer;
         
         bool valueFunctionTest;
         

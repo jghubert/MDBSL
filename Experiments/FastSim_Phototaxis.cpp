@@ -29,6 +29,7 @@ namespace MDB_Social {
         world->registerParameters();
 
         useOnlyRewardedStates = false;
+        showFastSimViewer = false;
         
         nbinputs = 1;
         nboutputs = 2;
@@ -95,6 +96,7 @@ namespace MDB_Social {
         settings->registerParameter<unsigned>("experiment.maxTimeOnReward", 0, "Maximum time allowed in the reward zone before ending the trial.");
         settings->registerParameter<bool>("experiment.useTracesWhenLightVisible", false, "Select only the traces when the light is visible to learn the value function.");
         settings->registerParameter<bool>("experiment.useSeeTheLightInputs", false, "Add an input to each light sensor to indicate is the light is in their field of view.");
+        settings->registerParameter<bool>("experiment.showFastSimViewer", false, "Show the viewer for the simulator.");
         std::cout << " DONE" << std::endl;
         
     }
@@ -127,6 +129,7 @@ namespace MDB_Social {
             maxTimeOnReward = settings->value<unsigned>("experiment.maxTimeOnReward").second;
             useTracesWhenLightVisible = settings->value<bool>("experiment.useTracesWhenLightVisible").second;
             useSeeTheLightInputs = settings->value<bool>("experiment.useSeeTheLightInputs").second;
+            showFastSimViewer = settings->value<bool>("experiment.showFastSimViewer").second;
             babbling->loadParameters("experiment");
             world->initialize();
             std::cout << "FastSim_Phototaxis: Parameters loaded." << std::endl;
@@ -235,7 +238,8 @@ namespace MDB_Social {
         bool reward;
         double tVFF= thresholdForVFasFitness; // * thresholdForVFasFitness;
         
-        if (nbinputs != 2*(1+useSeeTheLightInputs)+8) {
+        world->getLightSensors(lightSensors);   // Should be only one sensor
+        if (nbinputs != lightSensors.size()*(1+useSeeTheLightInputs)+8) {
             std::cerr << "FastSim_Phototataxis: Error: nbinputs should be " << 2*(1+useSeeTheLightInputs)+8 << std::endl;
             exit(0);
         }
@@ -270,6 +274,14 @@ namespace MDB_Social {
         unsigned epoch;
         unsigned index;
         
+        if (showFastSimViewer) {
+            if (!world->activateViewer(true))
+                std::cout << Color::Modifier(Color::FG_RED) << "FastSim_Phototaxis: ERROR: fastsim viewer not compiled in. Activate it using cmake -DUSE_FASTSIM_VIEWER=ON" << Color::Modifier(Color::FG_DEFAULT) << std::endl;
+            else {
+                std::cout << "FastSim_Phototaxis: Viewer activated." << std::endl;
+            }
+        }
+        
         for (unsigned trial = 0; trial < trialCount; ++trial) {
             controller->reset();
             relocateRobot();
@@ -292,9 +304,11 @@ namespace MDB_Social {
                 nninputs[index++] = lightSensors[0];
                 if (useSeeTheLightInputs)
                     nninputs[index++] = lightSensors[0] < 0.9;
-                nninputs[index++] = lightSensors[1];
-                if (useSeeTheLightInputs)
-                    nninputs[index++] = lightSensors[1] < 0.9;
+                if (lightSensors.size() > 1) {
+                    nninputs[index++] = lightSensors[1];
+                    if (useSeeTheLightInputs)
+                        nninputs[index++] = lightSensors[1] < 0.9;
+                }
                 std::copy(laserSensors.begin(), laserSensors.end(), nninputs.begin()+index);
 
                 //                nninputs[nbinputs-1] = 1.0;   // bias

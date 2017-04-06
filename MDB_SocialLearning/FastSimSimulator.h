@@ -29,7 +29,10 @@ namespace MDB_Social {
         boost::shared_ptr<fastsim::Robot> robot;
         boost::shared_ptr<fastsim::Map> simmap;
         fastsim::Settings* fsettings;
-
+        #ifdef USE_FASTSIM_VIEWER
+        fastsim::Display *viewer;
+        #endif
+        bool viewerActivated;
         std::string mapFilename;
         std::string configFilename;
         double mapWidth;
@@ -57,6 +60,8 @@ namespace MDB_Social {
         void getLaserSensors(std::vector<double>& distances);
         
         double getMapWidth() const;
+        
+        bool activateViewer(bool a);
     };
 
 }

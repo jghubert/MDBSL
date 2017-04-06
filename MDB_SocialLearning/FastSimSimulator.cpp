@@ -18,17 +18,30 @@ namespace MDB_Social {
 
     FastSimSimulator::FastSimSimulator()
     {
-        
+        viewerActivated = false;
+#ifdef USE_FASTSIM_VIEWER
+        viewer = NULL;
+#endif
     }
 
     FastSimSimulator::~FastSimSimulator() 
     {
         delete fsettings;
+#ifdef USE_FASTSIM_VIEWER
+        if (viewer)
+            delete viewer;
+#endif
+        
     }
 
     void FastSimSimulator::step()
     {
         simmap->update(robot->get_pos());
+#ifdef USE_FASTSIM_VIEWER
+        if (viewerActivated)
+            viewer->update();
+#endif
+        
     }
     
     void FastSimSimulator::configureRobotAs(std::string name, boost::shared_ptr<fastsim::Robot> r)
@@ -141,6 +154,25 @@ namespace MDB_Social {
             
     }
     
+    bool FastSimSimulator::activateViewer(bool a)
+    {
+#ifdef USE_FASTSIM_VIEWER
+        if (a != viewerActivated) {
+            if (a) {
+                viewer = new fastsim::Display(simmap, *robot);
+            }
+            else {
+                delete viewer;
+                viewer = NULL;
+            }
+            viewerActivated = a;
+        }
+        return true;
+#else
+        viewerActivated = false;
+        return false;
+#endif
+    }
     
     
 }
