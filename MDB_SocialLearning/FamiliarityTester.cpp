@@ -43,6 +43,7 @@ namespace MDB_Social {
         // Read the data.
         auto itend = mem->end();
         for (auto it = mem->begin(); currentPts < maxPts && it != itend; ++it) {
+            it->usedForVFTraining = true;
             for (unsigned i=0; i<dim; ++i)
                 dataPts[currentPts][i] = it->inputs[i];
             currentPts++;
@@ -67,10 +68,13 @@ namespace MDB_Social {
         auto itend = mem->end();
         for (auto it = mem->begin(); currentPts < maxPts && it != itend; ++it) {
             if (mask[index++]) {
+                it->usedForVFTraining = true;
                 for (unsigned i=0; i<dim; ++i)
                     dataPts[currentPts][i] = it->inputs[i];
                 currentPts++;
             }
+            else
+                it->usedForVFTraining = false;
         }
         
         kdTree = new ANNkd_tree(dataPts, currentPts, dim);

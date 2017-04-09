@@ -17,6 +17,10 @@
 #include <algorithm>
 #include "../MDB_SocialLearning/ResourceLibrary.hpp"
 #include "../MDB_SocialLearning/ValueFunction.h"
+#ifdef USE_REV
+#include "../RobotExperimentViewer/RobotExperimentViewer/revinit.h"
+#include "../RobotExperimentViewer/RobotExperimentViewer/rev.h"
+#endif
 
 namespace MDB_Social {
 
@@ -30,6 +34,9 @@ namespace MDB_Social {
 
         useOnlyRewardedStates = false;
         showFastSimViewer = false;
+        showREV = false;
+        realtime = false;
+        framerate = 25;
         
         nbinputs = 1;
         nboutputs = 2;
@@ -51,6 +58,11 @@ namespace MDB_Social {
         
         useTracesWhenLightVisible = false;
         useSeeTheLightInputs = false;
+        
+#ifdef USE_REV
+        rev = NULL;
+        revinit = NULL;
+#endif
 //        robot->add_light_sensor(fastsim::LightSensor(1,0.0f,100.0f));
         
 //        light = boost::shared_ptr<fastsim::IlluminatedSwitch>(new fastsim::IlluminatedSwitch(1, 5.0f, 300.0f, 300.0f, true));
@@ -67,6 +79,11 @@ namespace MDB_Social {
         delete world;
         delete controller;
         delete babbling;
+#ifdef USE_REV
+        delete revinit;
+        revinit = NULL;
+        rev = NULL;
+#endif        
     }
 
     void FastSim_Phototaxis::registerParameters()
@@ -96,7 +113,10 @@ namespace MDB_Social {
         settings->registerParameter<unsigned>("experiment.maxTimeOnReward", 0, "Maximum time allowed in the reward zone before ending the trial.");
         settings->registerParameter<bool>("experiment.useTracesWhenLightVisible", false, "Select only the traces when the light is visible to learn the value function.");
         settings->registerParameter<bool>("experiment.useSeeTheLightInputs", false, "Add an input to each light sensor to indicate is the light is in their field of view.");
-        settings->registerParameter<bool>("experiment.showFastSimViewer", false, "Show the viewer for the simulator.");
+        settings->registerParameter<bool>("experiment.showFastSimViewer", false, "Show the fastsim viewer for the simulator.");
+        settings->registerParameter<bool>("experiment.showREV", false, "Show REV viewer for the simulator.");
+        settings->registerParameter<bool>("experiment.realtime", false, "Play the experiment in realtime in the viewer.");
+        settings->registerParameter<unsigned>("experiment.framerate", 25, "Framerate used to display the experiment in the viewer.");
         std::cout << " DONE" << std::endl;
         
     }
@@ -130,6 +150,10 @@ namespace MDB_Social {
             useTracesWhenLightVisible = settings->value<bool>("experiment.useTracesWhenLightVisible").second;
             useSeeTheLightInputs = settings->value<bool>("experiment.useSeeTheLightInputs").second;
             showFastSimViewer = settings->value<bool>("experiment.showFastSimViewer").second;
+            showREV = settings->value<bool>("experiment.showREV").second;
+            realtime = settings->value<bool>("experiment.realtime").second;
+            framerate = settings->value<unsigned>("experiment.framerate").second;
+            
             babbling->loadParameters("experiment");
             world->initialize();
             std::cout << "FastSim_Phototaxis: Parameters loaded." << std::endl;
@@ -153,6 +177,25 @@ namespace MDB_Social {
             layers[1] = nboutputs;
         }
         controller->setup(layers, activationFunctions);
+        
+        if (showREV) {
+#ifdef USE_REV
+            
+            double wwidth = world->getMapWidth();
+            revinit = new REVInit();
+            rev = revinit->getViewer();
+            if (realtime)
+                rev->setRealtime(true);
+            rev->setSize(wwidth, wwidth);
+            rev->setFramerate(framerate);
+
+            // Draw the arena
+            rev->setRobotRadius(world->getRobot()->get_radius());
+            rev->addZone(rewardZoneDiameter/2.0, wwidth/2.0, wwidth/2.0, REV::Color(127, 127, 127, 255)); // START
+#else
+            std::cerr << "FastSim_Phototaxis: the REV viewer is not compiled in." << std::endl;
+#endif            
+        }
         
     }
 
@@ -285,7 +328,14 @@ namespace MDB_Social {
         for (unsigned trial = 0; trial < trialCount; ++trial) {
             controller->reset();
             relocateRobot();
-            
+#ifdef USE_REV
+            if (showREV) {
+                double x = world->getRobot()->get_pos().get_x();
+                double y = world->getRobot()->get_pos().get_y();
+                double orient = world->getRobot()->get_pos().theta();
+                rev->setRobotPosition(x, y, orient);
+            }
+#endif            
             onRewardZoneCounter = 0;
             enoughTimeOnReward = false;
             lreward = 0.0;
@@ -328,6 +378,16 @@ namespace MDB_Social {
                 world->updateRobot(timestep*(nnoutput[0]*2*maxSpeed-maxSpeed), timestep*(nnoutput[1]*2*maxSpeed-maxSpeed));
                 world->step();
 
+#ifdef USE_REV
+                if (showREV) {
+                    double x = world->getRobot()->get_pos().get_x();
+                    double y = world->getRobot()->get_pos().get_y();
+                    double orient = world->getRobot()->get_pos().theta();
+                    rev->setRobotPosition(x, y, orient);
+                    rev->step();
+                    revinit->updateEventQueue();
+                }
+#endif
                 logRobotPosition(trial, epoch);
                 if (sensorLog) {
                     sensorLogFile << trial << " " << epoch << " ";
@@ -359,6 +419,9 @@ namespace MDB_Social {
 //                rewardTotal += std::max((double)reward, trace.estimated_reward);
                 lreward += std::max((double)reward, trace.estimated_reward);
                 // need to compute the fitness now. Normally it should be the VF, but we don't have VF now...
+            }
+            if (testIndividual) {
+                std::cout << "Trial " << trial << " : total reward = " << lreward << " for " << epoch << " timesteps" << std::endl;
             }
             rewardTotal += lreward / epoch;
         }

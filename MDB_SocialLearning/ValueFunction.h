@@ -77,6 +77,7 @@ namespace MDB_Social {
         double getQuality() const;
         
         void loadFromExternalMemory();
+        bool loadFamiliarityFromTraces(TraceMemory* tm);
         
         bool saveValueFunctionToFile(const char* filename);
         

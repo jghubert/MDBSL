@@ -19,6 +19,10 @@
 #include "../MDB_SocialLearning/SimulatorLibrary.hpp"
 #include "../MDB_SocialLearning/ModelLibrary.hpp"
 #include "../MDB_SocialLearning/BabblingStandard.h"
+#ifdef USE_REV
+class REV;
+class REVInit;
+#endif
 
 namespace MDB_Social {
 
@@ -30,6 +34,10 @@ namespace MDB_Social {
 //        boost::shared_ptr<fastsim::IlluminatedSwitch> light;
         FeedforwardNN* controller;
         BabblingStandard* babbling;
+#ifdef USE_REV
+        REV* rev;
+        REVInit* revinit;
+#endif        
         
         unsigned nbinputs;
         unsigned nboutputs;
@@ -47,6 +55,9 @@ namespace MDB_Social {
         bool useTracesWhenLightVisible;
         bool useSeeTheLightInputs;
         bool showFastSimViewer;
+        bool showREV;
+        bool realtime;
+        unsigned framerate;
         
         bool valueFunctionTest;
         

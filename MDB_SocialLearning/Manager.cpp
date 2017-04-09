@@ -232,7 +232,7 @@ namespace MDB_Social {
         // TODO: load the backup files (loadMemoriesFromFile)
         //       Call the GAFitness with the selected genotype
         
-        if (!loadMemoriesFromFiles(generationToTest, false)) {   // No need for the traces
+        if (!loadMemoriesFromFiles(generationToTest, !testIndividualNoTrace)) {   // No need for the traces
             std::cerr << "Failed to load the memories." << std::endl;
             exit(1);
         }
@@ -298,6 +298,8 @@ namespace MDB_Social {
     
     bool Manager::loadMemoriesFromFiles(unsigned generation, bool loadTraces)
     {
+        std::cout << "Manager:: Loading memories: ";
+        
         std::string filename;
         std::string cwd = resourceLibrary->getWorkingDirectory();
         
@@ -307,8 +309,10 @@ namespace MDB_Social {
                 std::cerr << "Manager::loadMemoriesFromFiles: An error occurred when loading the value function from the file " << filename << std::endl;
                 return false;
             }
-            else
+            else {
+                std::cout << "Value Function ; ";
                 vf->loadFromExternalMemory();
+            }
         }
         
         filename = cwd + "/" + logFilenamePrefix + ".policy.step_" + std::to_string(generation) + ".log";
@@ -317,7 +321,7 @@ namespace MDB_Social {
             return false;
         }
         else
-            
+            std::cout << "Policies ; ";
         
         if (loadTraces) {
             filename = cwd + "/" + logFilenamePrefix + ".traces.step_" + std::to_string(generation) + ".log";
@@ -325,7 +329,15 @@ namespace MDB_Social {
                 std::cerr << "Manager::loadMemoriesFromFiles: An error occurred when loading the traces from the file " << filename << std::endl;
                 return false;
             }
+            else {
+                std::cout << " Traces.";
+                if (vf) {
+                    std::cout << "Manager: Loading familiarity from traces: ";
+                    std::cout << vf->loadFamiliarityFromTraces(traceMemory) << std::endl;
+                }
+            }
         }
+        std::cout << std::endl;
         
         return true;
     }

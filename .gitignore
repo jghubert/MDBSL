@@ -14,6 +14,18 @@ MDB_SocialLearning/dream_single
 
 MDB_SocialLearning/dream_socially
 
+build-*
+
 nbproject
 
 *.a
+
+MD_SOCIALLEARNING_automoc.dir
+
+
+MDB_SocialLearning/MD_SOCIALLEARNING_automoc.cpp
+
+*.o
+*.app
+
+*.stash

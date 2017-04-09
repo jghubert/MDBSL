@@ -113,6 +113,24 @@ namespace MDB_Social {
         }
     }
     
+    bool ValueFunction::loadFamiliarityFromTraces(TraceMemory* tm)
+    {
+        std::vector<bool> mask;
+        unsigned selectedTraces = 0;
+        mask.resize(tm->size(), false);
+        unsigned index=0;
+        for (auto it = tm->begin(); it != tm->end(); ++it) {
+            mask[index] = it->usedForVFTraining;
+            selectedTraces += mask[index];
+            index++;
+        }        
+        if (!famtester)
+            famtester = new FamiliarityTester(tm->getMaximumSize(), tm->begin()->inputs.size());            
+        if (selectedTraces) 
+            famtester->setTrainingSet(tm, mask);
+        return selectedTraces > 0;
+    }
+
     void ValueFunction::update()
     {
         std::cout << "Update of the value function..." << std::endl; 

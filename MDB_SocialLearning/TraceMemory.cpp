@@ -24,6 +24,7 @@ namespace MDB_Social {
         expected_reward = 0.0;
         estimated_reward = 0.0;
         reliability = 0.0;
+        usedForVFTraining = false;
     }
     
     Trace::Trace(const Trace& t)
@@ -51,6 +52,7 @@ namespace MDB_Social {
         this->expected_reward = t.expected_reward;
         this->estimated_reward = t.estimated_reward;
         this->reliability = t.reliability;
+        this->usedForVFTraining = t.usedForVFTraining;
         
         return *this;
     }

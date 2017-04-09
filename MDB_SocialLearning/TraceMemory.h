@@ -42,7 +42,8 @@ namespace MDB_Social {
         double expected_reward;  // rewards computed from the backpropagation process along the trace
         double true_reward;      // Reward received in the task
         double reliability;
-
+        bool usedForVFTraining;
+        
         double computeInputDistance(Trace& t, enum DistanceMeasure dm = EUCLIDIAN);
         
         friend std::ostream& operator<<(std::ostream& output, const Trace& T)
@@ -56,7 +57,8 @@ namespace MDB_Social {
             output << SEPARATOR << T.outputs.size();
             for (unsigned i=0; i<T.outputs.size(); ++i)
                 output << SEPARATOR << T.outputs[i];
-            output << SEPARATOR << T.true_reward << SEPARATOR << T.expected_reward << SEPARATOR << T.estimated_reward << SEPARATOR << T.reliability;
+            output << SEPARATOR << T.true_reward << SEPARATOR << T.expected_reward << SEPARATOR << T.estimated_reward << SEPARATOR << T.reliability
+                    << SEPARATOR << T.usedForVFTraining;
             
             return output;
         }
@@ -106,7 +108,7 @@ namespace MDB_Social {
                 input >> T.outputs[index++];
             }
             
-            input >> T.true_reward >> T.expected_reward >> T.estimated_reward >> T.reliability;
+            input >> T.true_reward >> T.expected_reward >> T.estimated_reward >> T.reliability >> T.usedForVFTraining;
 
             return input;
         }

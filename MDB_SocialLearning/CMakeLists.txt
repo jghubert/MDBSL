@@ -31,6 +31,11 @@ if (USE_FASTSIM)
     set (MDB_SocialLearning_LIB_SOURCES ${MDB_SocialLearning_LIB_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/FastSimSimulator.cpp)
 endif (USE_FASTSIM)
 
+if (USE_REV)
+    set (MDB_SocialLearning_LIB_SOURCES ${MDB_SocialLearning_LIB_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../RobotExperimentViewer/RobotExperimentViewer/rev.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../RobotExperimentViewer/RobotExperimentViewer/revinit.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../RobotExperimentViewer/RobotExperimentViewer/revinputviewer.cpp)
+endif (USE_REV)
+
+
 #Generate FitnessLibrary.hpp
 # add_definitions (-ggdb -Wall -std=c++11 -L/usr/local/bin -lstdc++)
 add_executable (generateFitnessClass generateFitnessClass.cpp)
