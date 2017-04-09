@@ -19,6 +19,10 @@
 #include "../MDB_SocialLearning/SimulatorLibrary.hpp"
 #include "../MDB_SocialLearning/ModelLibrary.hpp"
 //#include "../MDB_SocialLearning/BabblingStandard.h"
+#ifdef USE_REV
+class REV;
+class REVInit;
+#endif
 
 namespace MDB_Social {
 
@@ -29,6 +33,10 @@ namespace MDB_Social {
         FastSimSimulator* world;
 //        boost::shared_ptr<fastsim::IlluminatedSwitch> light;
         FeedforwardNN* controller;
+#ifdef USE_REV
+        REV* rev;
+        REVInit* revinit;
+#endif        
         
         unsigned nbinputs;
         unsigned nboutputs;
@@ -41,6 +49,9 @@ namespace MDB_Social {
         unsigned trialCount;
         unsigned epochCount;
         double timestep;
+        bool showREV;
+        bool realtime;
+        unsigned framerate;
         
         bool testIndividual;
         
@@ -60,7 +71,7 @@ namespace MDB_Social {
         void logRobotPosition(unsigned trial, unsigned epoch);
         
     public:
-        FastSim_Phototaxis_DistanceFit();
+        FastSim_Phototaxis_DistanceFit(std::string id="Default");
         FastSim_Phototaxis_DistanceFit(const FastSim_Phototaxis_DistanceFit& orig);
         virtual ~FastSim_Phototaxis_DistanceFit();
 

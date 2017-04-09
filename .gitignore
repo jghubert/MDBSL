@@ -29,3 +29,7 @@ MDB_SocialLearning/MD_SOCIALLEARNING_automoc.cpp
 *.app
 
 *.stash
+
+MDB_SocialLearning/generateFitnessClass
+
+MDB_SocialLearning/FitnessLibrary.hpp

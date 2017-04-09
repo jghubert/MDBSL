@@ -17,16 +17,24 @@
 #include <algorithm>
 #include "../MDB_SocialLearning/ResourceLibrary.hpp"
 #include "../MDB_SocialLearning/ValueFunction.h"
+#ifdef USE_REV
+#include "../RobotExperimentViewer/RobotExperimentViewer/revinit.h"
+#include "../RobotExperimentViewer/RobotExperimentViewer/rev.h"
+#endif
 
 namespace MDB_Social {
 
-    FastSim_Phototaxis_DistanceFit::FastSim_Phototaxis_DistanceFit() 
+    FastSim_Phototaxis_DistanceFit::FastSim_Phototaxis_DistanceFit(std::string id) 
+    :GAFitness(id)
     {
         registerParameters();
         
         world = static_cast<FastSimSimulator*>(this->getSimulator("FastSim"));
         world->registerParameters();
 
+        showREV = false;
+        realtime = false;
+        framerate = 25;
         
         nbinputs = 1;
         nboutputs = 2;
@@ -37,6 +45,12 @@ namespace MDB_Social {
                 
         logRobotPos = false;
         sensorLog = false;
+        
+#ifdef USE_REV
+        rev = NULL;
+        revinit = NULL;
+#endif
+        
 //        robot->add_light_sensor(fastsim::LightSensor(1,0.0f,100.0f));
         
 //        light = boost::shared_ptr<fastsim::IlluminatedSwitch>(new fastsim::IlluminatedSwitch(1, 5.0f, 300.0f, 300.0f, true));
@@ -52,6 +66,11 @@ namespace MDB_Social {
     {
         delete world;
         delete controller;
+#ifdef USE_REV
+        delete revinit;
+        revinit = NULL;
+        rev = NULL;
+#endif        
     }
 
     void FastSim_Phototaxis_DistanceFit::registerParameters()
@@ -70,6 +89,9 @@ namespace MDB_Social {
         settings->registerParameter<bool>("experiment.logRobotPosition", false, "Output the position of the robot in a log file.");
         settings->registerParameter<bool>("experiment.sensorLogFlag", false, "Log the sensors values during the experiment.");
         settings->registerParameter<double>("experiment.maxSpeed", 5, "Maximum speed of the robot.");
+        settings->registerParameter<bool>("experiment.showREV", false, "Show REV viewer for the simulator.");
+        settings->registerParameter<bool>("experiment.realtime", false, "Play the experiment in realtime in the viewer.");
+        settings->registerParameter<unsigned>("experiment.framerate", 25, "Framerate used to display the experiment in the viewer.");
         std::cout << " DONE" << std::endl;
     }
     
@@ -91,6 +113,9 @@ namespace MDB_Social {
             sensorLog = settings->value<bool>("experiment.sensorLogFlag").second;
             maxSpeed = settings->value<double>("experiment.maxSpeed").second;
             testIndividual = settings->value<bool>("General.testIndividual").second;
+            showREV = settings->value<bool>("experiment.showREV").second;
+            realtime = settings->value<bool>("experiment.realtime").second;
+            framerate = settings->value<unsigned>("experiment.framerate").second;
             world->initialize();
             std::cout << "FastSim_Phototaxis_DistanceFit: Parameters loaded." << std::endl;
         }
@@ -114,6 +139,24 @@ namespace MDB_Social {
         }
         controller->setup(layers, activationFunctions);
         
+        if (showREV) {
+#ifdef USE_REV
+            
+            double wwidth = world->getMapWidth();
+            revinit = new REVInit();
+            rev = revinit->getViewer();
+            if (realtime)
+                rev->setRealtime(true);
+            rev->setSize(wwidth, wwidth);
+            rev->setFramerate(framerate);
+
+            // Draw the arena
+            rev->setRobotRadius(world->getRobot()->get_radius());
+            rev->addZone(10, wwidth/2.0, wwidth/2.0, REV::Color(127, 127, 127, 255)); // START
+#else
+            std::cerr << "FastSim_Phototaxis_Distance: the REV viewer is not compiled in." << std::endl;
+#endif            
+        }
     }
 
     
@@ -185,14 +228,22 @@ namespace MDB_Social {
         std::vector<double> nninputs(nbinputs);
         std::vector<double> nnoutput(nboutputs);
         double dist;
+
+        std::string cwd = resourceLibrary->getWorkingDirectory();
         
+        std::cout << "* ";
+        std::cout.flush();
+
         if (logRobotPos) {
-            robotLogPosFile.open("robotPositions.log", std::ios_base::trunc);
+            std::string tmp = cwd + "/robotPositions.log";
+            robotLogPosFile.open(tmp.c_str(), std::ios_base::trunc);
         }
         
-        if (sensorLog)
-            sensorLogFile.open("sensors.log", std::ios_base::trunc);
-
+        if (sensorLog) {
+            std::string tmp = cwd + "/sensors.log";
+            sensorLogFile.open(tmp.c_str(), std::ios_base::trunc);
+        }
+        
         installGenotype(individual);
 //        controller->save("FannNetwork.log"); 
        
@@ -200,6 +251,14 @@ namespace MDB_Social {
         for (unsigned trial = 0; trial < trialCount; ++trial) {
 //            controller->reset();
             relocateRobot();
+#ifdef USE_REV
+            if (showREV) {
+                double x = world->getRobot()->get_pos().get_x();
+                double y = world->getRobot()->get_pos().get_y();
+                double orient = world->getRobot()->get_pos().theta();
+                rev->setRobotPosition(x, y, orient);
+            }
+#endif            
             
             double closest = computeDistance();
             double fartest = closest;
@@ -212,7 +271,7 @@ namespace MDB_Social {
 
                 std::copy(lightSensors.begin(), lightSensors.end(), nninputs.begin());
                 std::copy(laserSensors.begin(), laserSensors.end(), nninputs.begin()+lightSensors.size());
-                nninputs[nbinputs-1] = 1.0;   // bias
+//                nninputs[nbinputs-1] = 1.0;   // bias
                 if (testIndividual) {
                     std::cout << "Inputs = ";
                     for (unsigned i=0; i<nbinputs; ++i)
@@ -231,6 +290,18 @@ namespace MDB_Social {
                 world->updateRobot(timestep*(nnoutput[0]*2*maxSpeed-maxSpeed), timestep*(nnoutput[1]*2*maxSpeed-maxSpeed));
                 world->step();
 
+#ifdef USE_REV
+                if (showREV) {
+                    double x = world->getRobot()->get_pos().get_x();
+                    double y = world->getRobot()->get_pos().get_y();
+                    double orient = world->getRobot()->get_pos().theta();
+                    rev->setRobotPosition(x, y, orient);
+                    rev->step();
+                    revinit->updateEventQueue();
+                }
+#endif
+                
+                
                 logRobotPosition(trial, epoch);
                 if (sensorLog) {
                     sensorLogFile << trial << " " << epoch << " ";
