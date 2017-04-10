@@ -499,9 +499,11 @@ namespace MDB_Social {
                     nninputs[index++] = lightSensors[0];
                     if (useSeeTheLightInputs)
                         nninputs[index++] = lightSensors[0] < 0.9;
-                    nninputs[index++] = lightSensors[1];
-                    if (useSeeTheLightInputs)
-                        nninputs[index++] = lightSensors[1] < 0.9;
+                    if (lightSensors.size() > 1) {
+                        nninputs[index++] = lightSensors[1];
+                        if (useSeeTheLightInputs)
+                            nninputs[index++] = lightSensors[1] < 0.9;
+                    }
                     std::copy(laserSensors.begin(), laserSensors.end(), nninputs.begin()+index);
 //                    nninputs[nbinputs-1] = 1.0;   // bias
 

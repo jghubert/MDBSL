@@ -169,7 +169,6 @@ namespace MDB_Social {
 
         std::string logname = workingDirectory + "/SimpleGeneticAlgorithm.log";
         logfile.open(logname, std::ios_base::app);
-
         
         std::cout << "Starting evolution for " << maxGenerationCount << " generations." << std::endl;
         std::cout << "    Current generations :";
@@ -512,8 +511,6 @@ namespace MDB_Social {
         for (unsigned i=0; i<populationSize; ++i)
             stdPopulationFitness += pow(population[i]->getFitness() - meanPopulationFitness, 2.0);
         stdPopulationFitness = sqrt(stdPopulationFitness / (1.0*(populationSize-1)));
-        
-        
     }
 
     void SimpleGeneticAlgorithm::logStatistics()

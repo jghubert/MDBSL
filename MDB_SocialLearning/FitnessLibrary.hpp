@@ -6,6 +6,7 @@
 #include "../Experiments/FastSim_Phototaxis.h"
 #include "../Experiments/XOR_Experiment.h"
 #include "../Experiments/FastSim_MultiRobot_WallAvoidance.h"
+#include "../Experiments/FastSim_Phototaxis_DistanceFit.h"
 
 namespace MDB_Social {
 
@@ -20,6 +21,9 @@ namespace MDB_Social {
 		 static GAFitness* getFastSim_MultiRobot_WallAvoidance(std::string id) {
 			 return new FastSim_MultiRobot_WallAvoidance(id);
 		}
+		 static GAFitness* getFastSim_Phototaxis_DistanceFit(std::string id) {
+			 return new FastSim_Phototaxis_DistanceFit(id);
+		}
 
 	 public:
 		 static GAFitness* getFitness(std::string fit, std::string id="Default") {
@@ -29,6 +33,8 @@ namespace MDB_Social {
 				 return getXOR_Experiment(id);
 			 else if (fit == "FastSim_MultiRobot_WallAvoidance")
 				 return getFastSim_MultiRobot_WallAvoidance(id);
+			 else if (fit == "FastSim_Phototaxis_DistanceFit")
+				 return getFastSim_Phototaxis_DistanceFit(id);
 			 else
 				 return NULL;
 		 }
