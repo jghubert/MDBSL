@@ -90,7 +90,6 @@ namespace MDB_Social {
             logRobotPos = settings->value<bool>("experiment.logRobotPosition").second;
             sensorLog = settings->value<bool>("experiment.sensorLogFlag").second;
             maxSpeed = settings->value<double>("experiment.maxSpeed").second;
-            testIndividual = settings->value<bool>("General.testIndividual").second;
 //            useOnlyTrueReward = settings->value<bool>("experiment.useOnlyTrueReward").second;
 //            valueFunctionTest = settings->value<bool>("experiment.valueFunctionTest").second;
 //            babbling->loadParameters("experiment");
@@ -209,8 +208,9 @@ namespace MDB_Social {
         world->moveRobot(x, y, orient);
     }
     
-    double FastSim_MultiRobot_WallAvoidance::evaluateFitness(Genotype& individual)
+    double FastSim_MultiRobot_WallAvoidance::evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual)
     {
+        testIndividual = _testIndividual;
         std::vector<double> laserSensors;
         std::vector<double> nninputs(nbinputs);
         std::vector<double> nnoutput(nboutputs);

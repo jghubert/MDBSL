@@ -61,7 +61,7 @@ namespace MDB_Social {
         FastSim_MultiRobot_WallAvoidance(std::string id="Default");
         virtual ~FastSim_MultiRobot_WallAvoidance();
 
-        double evaluateFitness(Genotype& individual) override;
+        double evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual=false) override;
 
         void loadParameters() override;
         

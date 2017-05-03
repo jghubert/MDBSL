@@ -32,7 +32,7 @@ namespace MDB_Social {
     }
 
     
-    double AllOneExperiment::evaluateFitness(Genotype& individual)
+    double AllOneExperiment::evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual)
     {
         double fit = 0.0;
         unsigned gensize = individual.getSize();

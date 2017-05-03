@@ -112,7 +112,6 @@ namespace MDB_Social {
             logRobotPos = settings->value<bool>("experiment.logRobotPosition").second;
             sensorLog = settings->value<bool>("experiment.sensorLogFlag").second;
             maxSpeed = settings->value<double>("experiment.maxSpeed").second;
-            testIndividual = settings->value<bool>("General.testIndividual").second;
             showREV = settings->value<bool>("experiment.showREV").second;
             realtime = settings->value<bool>("experiment.realtime").second;
             framerate = settings->value<unsigned>("experiment.framerate").second;
@@ -217,11 +216,13 @@ namespace MDB_Social {
         
     }
     
-    double FastSim_Phototaxis_DistanceFit::evaluateFitness(Genotype& individual)
+    double FastSim_Phototaxis_DistanceFit::evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual)
     {
         // In this experiment we evolve and test a policy. The policy uses the value function and the current state to decide what the next action should be.
         // This part only cares about the policy.
         // A reward will be given when the robot reaches a given distance from the light source.
+        
+        testIndividual = _testIndividual;
         
         std::vector<double> lightSensors;
         std::vector<double> laserSensors;

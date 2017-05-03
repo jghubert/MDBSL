@@ -83,7 +83,7 @@ namespace MDB_Social {
         virtual void preprocessing() {};    // Called before testing the current generation
         virtual void postprocessing() {};   // Called after testing the current generation
         
-        virtual double evaluateFitness(Genotype& individual)=0;
+        virtual double evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool testing=false)=0;
         
         virtual void loadParameters()=0;
         

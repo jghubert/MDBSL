@@ -55,12 +55,13 @@ namespace MDB_Social {
             exit(1);
         }
         
+        unsigned ulim = std::numeric_limits<unsigned>::max();
         std::cout << "Launching babbling for " << trialCount << " trials." << std::endl;
         std::cout << "   Trial ";
         for (unsigned i=0; i<trialCount; ++i) {
             std::cout << i << " ";
             std::cout.flush();
-            fitness->evaluateFitness(dummyGenotype);
+            fitness->evaluateFitness(dummyGenotype, ulim, ulim, false);
         }
         std::cout <<" DONE" << std::endl;
         

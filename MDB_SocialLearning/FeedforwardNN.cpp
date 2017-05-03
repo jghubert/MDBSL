@@ -355,9 +355,11 @@ namespace MDB_Social {
         std::vector<enum FeedforwardNN::ActivationFunction> af(1, FeedforwardNN::SIGMOID);
         this->setup(layers, af);
         this->setWeightsMinMax(weightMinimum, weightMaximum);
-        this->setTrainingAlgorithm(FeedforwardNN::BATCH);
-        this->setTrainingErrorFunction(FeedforwardNN::LINEARFCT);
+//        this->setTrainingAlgorithm(FeedforwardNN::BATCH);
+        this->setTrainingAlgorithm(FeedforwardNN::RPROP);
+        this->setTrainingErrorFunction(FeedforwardNN::TANHFCT);
         this->setTrainingStopFunction(FeedforwardNN::MSE);
+
         
         this->setLearningRate(learningRate);
         this->setMaxTrainingEpoch(maxTrainingEpoch);

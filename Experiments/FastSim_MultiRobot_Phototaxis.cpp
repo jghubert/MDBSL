@@ -5,14 +5,14 @@
  */
 
 /* 
- * File:   FastSim_Phototaxis.cpp
+ * File:   FastSim_MultiRobot_Phototaxis.cpp
  * Author: Julien Hubert
  * 
  * Created on August 22, 2016, 5:21 PM
  */
 
 #include "../MDB_SocialLearning/Settings.h"
-#include "FastSim_Phototaxis.h"
+#include "FastSim_MultiRobot_Phototaxis.h"
 #include <cstdlib>
 #include <algorithm>
 #include "../MDB_SocialLearning/ResourceLibrary.hpp"
@@ -24,7 +24,7 @@
 
 namespace MDB_Social {
 
-    FastSim_Phototaxis::FastSim_Phototaxis(std::string id) 
+    FastSim_MultiRobot_Phototaxis::FastSim_MultiRobot_Phototaxis(std::string id) 
     :GAFitness(id)
     {
         registerParameters();
@@ -69,12 +69,12 @@ namespace MDB_Social {
 //        world->getMap()->add_illuminated_switch(light);
     }
 
-    FastSim_Phototaxis::FastSim_Phototaxis(const FastSim_Phototaxis& orig) 
+    FastSim_MultiRobot_Phototaxis::FastSim_MultiRobot_Phototaxis(const FastSim_MultiRobot_Phototaxis& orig) 
     {
         
     }
 
-    FastSim_Phototaxis::~FastSim_Phototaxis() 
+    FastSim_MultiRobot_Phototaxis::~FastSim_MultiRobot_Phototaxis() 
     {
         delete world;
         delete controller;
@@ -86,9 +86,9 @@ namespace MDB_Social {
 #endif        
     }
 
-    void FastSim_Phototaxis::registerParameters()
+    void FastSim_MultiRobot_Phototaxis::registerParameters()
     {
-        std::cout << "FastSim_Phototaxis : registering the parameters...";
+        std::cout << "FastSim_MultiRobot_Phototaxis : registering the parameters...";
         std::cout.flush();
 //        Settings* settings = Settings::getInstance();
         settings->registerParameter<unsigned>("experiment.nbinputs", 1, "Number of inputs/sensors on the neural network.");
@@ -121,9 +121,9 @@ namespace MDB_Social {
         
     }
     
-    void FastSim_Phototaxis::loadParameters()
+    void FastSim_MultiRobot_Phototaxis::loadParameters()
     {
-        std::cout << "FastSim_Phototaxis: Loading parameters..." << std::endl;
+        std::cout << "FastSim_MultiRobot_Phototaxis: Loading parameters..." << std::endl;
 //        Settings* settings = Settings::getInstance();
         try {
             nbinputs = settings->value<unsigned>("experiment.nbinputs").second;
@@ -155,10 +155,10 @@ namespace MDB_Social {
             
             babbling->loadParameters("experiment");
             world->initialize();
-            std::cout << "FastSim_Phototaxis: Parameters loaded." << std::endl;
+            std::cout << "FastSim_MultiRobot_Phototaxis: Parameters loaded." << std::endl;
         }
         catch (std::exception e) {
-            std::cerr << "FastSim_Phototaxis: Error loading the parameters: " << e.what() << std::endl;
+            std::cerr << "FastSim_MultiRobot_Phototaxis: Error loading the parameters: " << e.what() << std::endl;
             exit(1);
         }
         
@@ -192,21 +192,21 @@ namespace MDB_Social {
             rev->setRobotRadius(world->getRobot()->get_radius());
             rev->addZone(rewardZoneDiameter/2.0, wwidth/2.0, wwidth/2.0, REV::Color(127, 127, 127, 255)); // START
 #else
-            std::cerr << "FastSim_Phototaxis: the REV viewer is not compiled in." << std::endl;
+            std::cerr << "FastSim_MultiRobot_Phototaxis: the REV viewer is not compiled in." << std::endl;
 #endif            
         }
         
     }
 
     
-    void FastSim_Phototaxis::installGenotype(Genotype& individual)
+    void FastSim_MultiRobot_Phototaxis::installGenotype(Genotype& individual)
     {
         std::vector<FeedforwardNN::weight_t> weights(individual.getSize());
         
         controller->getWeights(weights);
 
         if (weights.size() != individual.getSize()) {
-            std::cerr << "FastSim_Phototaxis: Size of the genotype (size = " << individual.getSize() << ") differs from the size of the network (size = " << weights.size() << ")." << std::endl;
+            std::cerr << "FastSim_MultiRobot_Phototaxis: Size of the genotype (size = " << individual.getSize() << ") differs from the size of the network (size = " << weights.size() << ")." << std::endl;
             exit(1);
         }
         
@@ -216,7 +216,7 @@ namespace MDB_Social {
         controller->setWeights(weights);
     }
 
-    void FastSim_Phototaxis::logRobotPosition(unsigned trial, unsigned epoch)
+    void FastSim_MultiRobot_Phototaxis::logRobotPosition(unsigned trial, unsigned epoch)
     {
         if (logRobotPos) {
             double x = world->getRobot()->get_pos().get_x();
@@ -227,7 +227,7 @@ namespace MDB_Social {
         
     }
     
-    void FastSim_Phototaxis::relocateRobot()
+    void FastSim_MultiRobot_Phototaxis::relocateRobot()
     {
         double w = world->getMapWidth();
         
@@ -240,7 +240,7 @@ namespace MDB_Social {
         world->moveRobot(x, y, orient);
     }
 
-    bool FastSim_Phototaxis::computeReward()
+    bool FastSim_MultiRobot_Phototaxis::computeReward()
     {
         // Compute the distance between the goal and the robot, and compute the reward accordingly.
         double x = world->getRobot()->get_pos().get_x();
@@ -257,7 +257,7 @@ namespace MDB_Social {
         
     }
     
-    double FastSim_Phototaxis::evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual)
+    double FastSim_MultiRobot_Phototaxis::evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual)
     {
         testIndividual = _testIndividual;
         // In this experiment we evolve and test a policy. The policy uses the value function and the current state to decide what the next action should be.
@@ -319,9 +319,9 @@ namespace MDB_Social {
         
         if (showFastSimViewer) {
             if (!world->activateViewer(true))
-                std::cout << Color::Modifier(Color::FG_RED) << "FastSim_Phototaxis: ERROR: fastsim viewer not compiled in. Activate it using cmake -DUSE_FASTSIM_VIEWER=ON" << Color::Modifier(Color::FG_DEFAULT) << std::endl;
+                std::cout << Color::Modifier(Color::FG_RED) << "FastSim_MultiRobot_Phototaxis: ERROR: fastsim viewer not compiled in. Activate it using cmake -DUSE_FASTSIM_VIEWER=ON" << Color::Modifier(Color::FG_DEFAULT) << std::endl;
             else {
-                std::cout << "FastSim_Phototaxis: Viewer activated." << std::endl;
+                std::cout << "FastSim_MultiRobot_Phototaxis: Viewer activated." << std::endl;
             }
         }
         
@@ -437,7 +437,7 @@ namespace MDB_Social {
         return rewardTotal/(1.0*trialCount);
     }
 
-    void FastSim_Phototaxis::testValueFunction()
+    void FastSim_MultiRobot_Phototaxis::testValueFunction()
     {
         // This function tests the value function by placing the robot following a grid and measuring the response of the VF.
         // The robot will be tested with multiple orientations: one facing the light, one facing away from it.

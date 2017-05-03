@@ -75,7 +75,7 @@ namespace MDB_Social {
         FastSim_Phototaxis_DistanceFit(const FastSim_Phototaxis_DistanceFit& orig);
         virtual ~FastSim_Phototaxis_DistanceFit();
 
-        double evaluateFitness(Genotype& individual) override;
+        double evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual=false) override;
 
         void loadParameters() override;
         

@@ -60,6 +60,7 @@ namespace MDB_Social {
         std::string logFilenamePrefix; 
         
         bool testIndividual;
+        bool testGeneration;
         int individualToTest;
         int generationToTest;
         bool testIndividualNoValueFunction;
@@ -86,6 +87,8 @@ namespace MDB_Social {
         void step();
         void runExperiment();
         void runIndividualTest();
+        void runGenerationTest();
+
         
         void processTraceMemory();
         void processValueFunction();

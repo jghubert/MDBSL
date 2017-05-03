@@ -61,7 +61,6 @@ namespace MDB_Social {
             hiddenNeurons = settings->value<unsigned>("experiment.hiddenNeurons").second;
             controllerMinimumWeight = settings->value<double>("experiment.controllerMinimumWeight").second;
             controllerMaximumWeight = settings->value<double>("experiment.controllerMaximumWeight").second;
-            testIndividual = settings->value<bool>("General.testIndividual").second;
             std::cout << "XOR_Experiment: Parameters loaded." << std::endl;
         }
         catch (std::exception e) {
@@ -106,8 +105,9 @@ namespace MDB_Social {
         controller->setWeights(weights);
     }
     
-    double XOR_Experiment::evaluateFitness(Genotype& individual)
+    double XOR_Experiment::evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual)
     {
+        testIndividual = _testIndividual;
         std::vector<double> nninputs(nbinputs);
         std::vector<double> nnoutput(nboutputs);
         

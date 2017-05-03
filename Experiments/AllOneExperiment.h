@@ -26,7 +26,7 @@ namespace MDB_Social {
         AllOneExperiment();
         ~AllOneExperiment();
         
-        double evaluateFitness(Genotype& individual) override;
+        double evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual=false) override;
         
         void loadParameters() override;
     };

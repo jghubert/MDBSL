@@ -5,14 +5,14 @@
  */
 
 /* 
- * File:   FastSim_Phototaxis.h
+ * File:   FastSim_MultiRobot_Phototaxis.h
  * Author: Julien Hubert
  *
  * Created on August 22, 2016, 5:21 PM
  */
 
-#ifndef FASTSIM_PHOTOTAXIS_H
-#define FASTSIM_PHOTOTAXIS_H
+#ifndef FASTSIM_MULTIROBOT_PHOTOTAXIS_H
+#define FASTSIM_MULTIROBOT_PHOTOTAXIS_H
 
 #include <fstream>
 #include "../MDB_SocialLearning/GeneticAlgorithm.hpp"
@@ -26,7 +26,7 @@ class REVInit;
 
 namespace MDB_Social {
 
-    class FastSim_Phototaxis: public GAFitness 
+    class FastSim_MultiRobot_Phototaxis: public GAFitness 
     {
     private:
         // Tons of boost::shared_ptr because FastSim only understands this...
@@ -89,9 +89,9 @@ namespace MDB_Social {
         void testValueFunction();
         
     public:
-        FastSim_Phototaxis(std::string id="Default");
-        FastSim_Phototaxis(const FastSim_Phototaxis& orig);
-        virtual ~FastSim_Phototaxis();
+        FastSim_MultiRobot_Phototaxis(std::string id="Default");
+        FastSim_MultiRobot_Phototaxis(const FastSim_MultiRobot_Phototaxis& orig);
+        virtual ~FastSim_MultiRobot_Phototaxis();
 
         double evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual=false) override;
 

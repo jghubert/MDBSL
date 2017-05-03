@@ -19,6 +19,8 @@
 #include "Model.hpp"
 #include "RobotID.h"
 #include "FamiliarityTester.h"
+#include "ValueFunctionMemory.hpp"
+#include <list>
 
 namespace MDB_Social {
 
@@ -30,6 +32,12 @@ namespace MDB_Social {
             SENSORY_COVERAGE = 2,
             MINIMUM_REWARD = 3
         };
+        
+        enum MultipleVFMergingMode {
+            AVERAGE = 0,
+            SUM = 1,
+            UNDEFINED    // Used to deactivate the function and cause an error.
+        };
 
     private:
         // Here are the parameters for the value function.
@@ -37,6 +45,7 @@ namespace MDB_Social {
         
         // A value function has a model
         Model* vf;
+        std::list<Model*> additionalVFs;
         std::vector<double> inputs;
         std::vector<double> outputs;
 
@@ -51,8 +60,10 @@ namespace MDB_Social {
         unsigned minimumRewardThreshold;
         bool useOnlyRewardedTraces;
         double rewardThreshold;
+        unsigned vfMergingMode;
 
         bool compressTraceMemoryFlag;
+        
         
         double simpleRatioQualityMeasure();
         unsigned minimumRewardQualityMeasure();
@@ -84,6 +95,8 @@ namespace MDB_Social {
         virtual void setID(std::string& _id);
         
         double computeFamiliarity(Trace& t);
+        
+        void addImportedValueFunction(ValueFunctionMemory* addvf);
         
     };
 

@@ -40,6 +40,7 @@ namespace MDB_Social {
         socialMode = false;
         testIndividualNoValueFunction = false;
         testIndividualNoTrace = false;
+        testGeneration = false;
         
 //        settings = SettingsLibrary::getInstance(ID);
         settings->setParameterSources(settingfile, argc, argv);
@@ -122,6 +123,7 @@ namespace MDB_Social {
         settings->registerParameter<std::string>("Log.logFilenamePrefix", "log", "Prefix for the files generated to store the logs.");
         
         settings->registerParameter<bool>("General.testIndividual", false, "Test a previously trained individual.");
+        settings->registerParameter<bool>("General.testGeneration", false, "Test all the individuals of a previously evolved generation.");
         settings->registerParameter<int>("General.Test.individual", -1, "Which individual to test. -1 designates the best individual.");
         settings->registerParameter<int>("General.Test.generation", 0, "Which generation to test.");
         settings->registerParameter<bool>("General.Test.noValueFunction", false, "Do not load the value function for the test");
@@ -145,6 +147,7 @@ namespace MDB_Social {
         logTraces = settings->value<bool>("Log.logTraces").second;
         logFilenamePrefix = settings->value<std::string>("Log.logFilenamePrefix").second;
         
+        testGeneration = settings->value<bool>("General.testGeneration").second;
         testIndividual = settings->value<bool>("General.testIndividual").second;
         individualToTest = settings->value<int>("General.Test.individual").second;
         generationToTest = settings->value<int>("General.Test.generation").second;
@@ -203,6 +206,9 @@ namespace MDB_Social {
             std::cout << "Testing individual number " << individualToTest << " from cycle " << generationToTest << std::endl;
             runIndividualTest();
         }
+        else if (testGeneration) {
+            runGenerationTest();
+        }
         else {
             // Don't need this part. Should have done when taking care of the socialMode
 //            if (socialMode) {
@@ -233,14 +239,14 @@ namespace MDB_Social {
         //       Call the GAFitness with the selected genotype
         
         if (!loadMemoriesFromFiles(generationToTest, !testIndividualNoTrace)) {   // No need for the traces
-            std::cerr << "Failed to load the memories." << std::endl;
+            std::cerr << "Manager: runIndividualTest: Failed to load the memories for generation " << generationToTest << " ." << std::endl;
             exit(1);
         }
         
         // Select the genotype and launch the fitness
         GAFitness* fit = policyGA->getFitnessFunction();
         if (individualToTest < policyMemory->size()) {
-            double fitval = fit->evaluateFitness((*policyMemory)[individualToTest]);
+            double fitval = fit->evaluateFitness((*policyMemory)[individualToTest], generationToTest, individualToTest, true);
             std::cout << "The fitness of the individual (index = " << individualToTest << "; evaluated fitness = " << (*policyMemory)[individualToTest].getFitness() << ") is " << fitval << std::endl;
         }
         else {
@@ -250,6 +256,25 @@ namespace MDB_Social {
         
     }
 
+    void Manager::runGenerationTest()
+    {
+        if (!loadMemoriesFromFiles(generationToTest, !testIndividualNoTrace)) {   // No need for the traces
+            std::cerr << "Manager: runGenerationTest: Failed to load the memories for generation " << generationToTest << " ." << std::endl;
+            exit(1);
+        }
+        
+        // Select the genotype and launch the fitness
+        GAFitness* fit = policyGA->getFitnessFunction();
+        unsigned index = 0;
+        std::cout << "Testing generation " << generationToTest << " : ";
+        std::cout.flush();
+        for (PolicyMemory::iterator it = policyMemory->begin(); it != policyMemory->end(); ++it) {
+            std::cout << index << " (fit=" << fit->evaluateFitness(*it, generationToTest, index, true) << ") ";
+            std::cout.flush();
+            index++;
+        }
+        
+    }
     
     void Manager::processTraceMemory()
     {

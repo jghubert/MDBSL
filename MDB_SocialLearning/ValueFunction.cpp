@@ -16,6 +16,7 @@
 #include "ModelLibrary.hpp"
 #include "ResourceLibrary.hpp"
 #include "FeedforwardNN.h"
+#include <valarray>
 
 namespace MDB_Social {
 
@@ -27,13 +28,16 @@ namespace MDB_Social {
         compressTraceMemoryFlag = false;
         useOnlyRewardedTraces = false;
         rewardThreshold = 0.0;
-        
+        vfMergingMode = UNDEFINED;
     }
 
     ValueFunction::~ValueFunction() 
     {
         if (vf)
             delete vf;
+        for (auto it = additionalVFs.begin(); it != additionalVFs.end(); ++it)
+            delete *it;
+        additionalVFs.clear();
         
         if (famtester)
             delete famtester;
@@ -78,7 +82,7 @@ namespace MDB_Social {
         settings->registerParameter<std::string>("ValueFunction.qualityMeasure", std::string("SIMPLE_RATIO"), "Quality measure used to evaluate the value function.");
         settings->registerParameter<double>("ValueFunction.simple_ratio.qualityRatio", 0.1, "Value function: Simple Ratio: Minimum success ratio threshold for using the controllers.");
         settings->registerParameter<unsigned>("ValueFunction.minimum_reward.threshold", 50, "Value function: Minimum Reward: Amount of rewarded steps required to switch off the babbling.");
-        
+        settings->registerParameter<std::string>("ValueFunction.vfMergingMode", std::string("UNDEFINED"), "Indicate how to merge the outputs of multiple value functions.");
         settings->registerParameter<bool>("ValueFunction.compressTraceMemory", false, "Value function: Compress the traces before learning the value function.");
         
         settings->registerParameter<bool>("ValueFunction.useOnlyRewardedTraces", false, "Value function: Use only rewarded traces for learning.");
@@ -228,7 +232,33 @@ namespace MDB_Social {
 //                inputs[insize+i] = t.outputs[i];
 
             nn->run(inputs, outputs);
-            return outputs[0];
+            double localOutput = outputs[0];
+            
+            if (additionalVFs.size()) {
+                std::valarray<double> estimations(additionalVFs.size());
+                unsigned index = 0;
+                for (auto it = additionalVFs.begin(); it != additionalVFs.end(); ++it) {
+                    static_cast<FeedforwardNN*>(*it)->run(inputs,outputs);
+                    estimations[index++] = outputs[0];
+                }
+                
+                switch (vfMergingMode) {
+                    case AVERAGE:
+                        localOutput = (localOutput + estimations.sum()) / (estimations.size() + 1);
+                        break;
+                    case SUM:
+                        localOutput += estimations.sum();
+                        break;
+                    case UNDEFINED:
+                        std::cerr << "ValueFunction: ERROR: The merging mode is set to UNDEFINED. Ignoring the additional value functions." << std::endl;
+                        break;
+                    default:
+                        std::cerr << "ValueFunction: ERROR: The merging mode is not unknown." << std::endl;
+                        exit(1);
+                }
+            }
+            
+            return localOutput;
         }
         else {
             std::cerr << "ValueFunction::estimateTrace: Unknown value function type: " << valueFunctionType << std::endl;
@@ -328,5 +358,18 @@ namespace MDB_Social {
             return 1e6;
     }
     
-    
+    void ValueFunction::addImportedValueFunction(ValueFunctionMemory* vfmem)
+    {
+        // TODO: Consider different types of models between robots.
+        Model* addvf;
+        addvf = ModelLibrary::getModel(valueFunctionType);
+        addvf->setExternalMemory(vfmem);
+        addvf->loadParameters("ValueFunction");
+        addvf->initializeFromParameters();
+        
+        addvf->setExternalMemory(NULL);   // We don't use the publish function on them for now.
+
+        additionalVFs.push_back(addvf);
+    }
+   
 }
