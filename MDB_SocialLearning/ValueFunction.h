@@ -69,7 +69,7 @@ namespace MDB_Social {
         unsigned minimumRewardQualityMeasure();
         
     public:
-        ValueFunction();
+        ValueFunction(std::string id="Default");
         virtual ~ValueFunction();
 
         void registerParameters();
@@ -97,6 +97,7 @@ namespace MDB_Social {
         double computeFamiliarity(Trace& t);
         
         void addImportedValueFunction(ValueFunctionMemory* addvf);
+        void clearImportedValueFunction();
         
     };
 

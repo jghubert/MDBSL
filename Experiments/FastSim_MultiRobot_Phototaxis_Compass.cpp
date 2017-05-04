@@ -5,14 +5,14 @@
  */
 
 /* 
- * File:   FastSim_MultiRobot_Phototaxis.cpp
+ * File:   FastSim_MultiRobot_Phototaxis_Compass.cpp
  * Author: Julien Hubert
  * 
  * Created on August 22, 2016, 5:21 PM
  */
 
 #include "../MDB_SocialLearning/Settings.h"
-#include "FastSim_MultiRobot_Phototaxis.h"
+#include "FastSim_MultiRobot_Phototaxis_Compass.h"
 #include <cstdlib>
 #include <algorithm>
 #include "../MDB_SocialLearning/ResourceLibrary.hpp"
@@ -25,7 +25,7 @@
 
 namespace MDB_Social {
 
-    FastSim_MultiRobot_Phototaxis::FastSim_MultiRobot_Phototaxis(std::string id) 
+    FastSim_MultiRobot_Phototaxis_Compass::FastSim_MultiRobot_Phototaxis_Compass(std::string id) 
     :GAFitness(id)
     {
         registerParameters();
@@ -43,6 +43,9 @@ namespace MDB_Social {
         nboutputs = 2;
         hiddenNeurons = 5;
         
+        compassTest = false;
+        fitnessComparisonTest = false;
+        
         controllerMinimumWeight = -10.0;
         controllerMaximumWeight = 10.0;
         
@@ -56,10 +59,7 @@ namespace MDB_Social {
         logRobotPos = false;
         sensorLog = false;
         valueFunctionTest = false;
-        
-        useTracesWhenLightVisible = false;
-        useSeeTheLightInputs = false;
-        
+                
 #ifdef USE_REV
         rev = NULL;
         revinit = NULL;
@@ -70,12 +70,12 @@ namespace MDB_Social {
 //        world->getMap()->add_illuminated_switch(light);
     }
 
-    FastSim_MultiRobot_Phototaxis::FastSim_MultiRobot_Phototaxis(const FastSim_MultiRobot_Phototaxis& orig) 
+    FastSim_MultiRobot_Phototaxis_Compass::FastSim_MultiRobot_Phototaxis_Compass(const FastSim_MultiRobot_Phototaxis_Compass& orig) 
     {
         
     }
 
-    FastSim_MultiRobot_Phototaxis::~FastSim_MultiRobot_Phototaxis() 
+    FastSim_MultiRobot_Phototaxis_Compass::~FastSim_MultiRobot_Phototaxis_Compass() 
     {
         delete world;
         delete controller;
@@ -87,9 +87,9 @@ namespace MDB_Social {
 #endif        
     }
 
-    void FastSim_MultiRobot_Phototaxis::registerParameters()
+    void FastSim_MultiRobot_Phototaxis_Compass::registerParameters()
     {
-        std::cout << "FastSim_MultiRobot_Phototaxis : registering the parameters...";
+        std::cout << "FastSim_MultiRobot_Phototaxis_Compass : registering the parameters...";
         std::cout.flush();
 //        Settings* settings = Settings::getInstance();
         settings->registerParameter<unsigned>("experiment.nbinputs", 1, "Number of inputs/sensors on the neural network.");
@@ -112,19 +112,20 @@ namespace MDB_Social {
         settings->registerParameter<double>("experiment.thresholdForVFasFitness", 0.5, "Minimum distance between a trace and the traces in memory to use VF as fitness.");
         settings->registerParameter<bool>("experiment.endTrialWhenOnReward", false, "Limit the time allowed in the reward zone before ending the trial.");
         settings->registerParameter<unsigned>("experiment.maxTimeOnReward", 0, "Maximum time allowed in the reward zone before ending the trial.");
-        settings->registerParameter<bool>("experiment.useTracesWhenLightVisible", false, "Select only the traces when the light is visible to learn the value function.");
-        settings->registerParameter<bool>("experiment.useSeeTheLightInputs", false, "Add an input to each light sensor to indicate is the light is in their field of view.");
         settings->registerParameter<bool>("experiment.showFastSimViewer", false, "Show the fastsim viewer for the simulator.");
         settings->registerParameter<bool>("experiment.showREV", false, "Show REV viewer for the simulator.");
         settings->registerParameter<bool>("experiment.realtime", false, "Play the experiment in realtime in the viewer.");
         settings->registerParameter<unsigned>("experiment.framerate", 25, "Framerate used to display the experiment in the viewer.");
+        settings->registerParameter<bool>("experiment.compassTest", false, "Test the compass output by rotating the robot at different location and printing the readings.");
+        settings->registerParameter<bool>("experiment.fitnessComparisonTest", false, "Test the individual by using the learned and perfect fitness for comparison purposes.");
+        settings->registerParameter<bool>("experiment.printInputsOutputs", false, "During testing, print the input and outputs of the neural network.");
         std::cout << " DONE" << std::endl;
         
     }
     
-    void FastSim_MultiRobot_Phototaxis::loadParameters()
+    void FastSim_MultiRobot_Phototaxis_Compass::loadParameters()
     {
-        std::cout << "FastSim_MultiRobot_Phototaxis: Loading parameters..." << std::endl;
+        std::cout << "FastSim_MultiRobot_Phototaxis_Compass: Loading parameters..." << std::endl;
 //        Settings* settings = Settings::getInstance();
         try {
             nbinputs = settings->value<unsigned>("experiment.nbinputs").second;
@@ -140,6 +141,7 @@ namespace MDB_Social {
             logRobotPos = settings->value<bool>("experiment.logRobotPosition").second;
             sensorLog = settings->value<bool>("experiment.sensorLogFlag").second;
             maxSpeed = settings->value<double>("experiment.maxSpeed").second;
+//            testIndividual = settings->value<bool>("General.testIndividual").second;
             useOnlyTrueReward = settings->value<bool>("experiment.useOnlyTrueReward").second;
             valueFunctionTest = settings->value<bool>("experiment.valueFunctionTest").second;
             useOnlyRewardedStates = settings->value<bool>("experiment.useOnlyRewardedStates").second;
@@ -147,19 +149,20 @@ namespace MDB_Social {
             thresholdForVFasFitness = settings->value<double>("experiment.thresholdForVFasFitness").second;
             endTrialWhenOnReward = settings->value<bool>("experiment.endTrialWhenOnReward").second;
             maxTimeOnReward = settings->value<unsigned>("experiment.maxTimeOnReward").second;
-            useTracesWhenLightVisible = settings->value<bool>("experiment.useTracesWhenLightVisible").second;
-            useSeeTheLightInputs = settings->value<bool>("experiment.useSeeTheLightInputs").second;
             showFastSimViewer = settings->value<bool>("experiment.showFastSimViewer").second;
             showREV = settings->value<bool>("experiment.showREV").second;
             realtime = settings->value<bool>("experiment.realtime").second;
             framerate = settings->value<unsigned>("experiment.framerate").second;
+            compassTest = settings->value<bool>("experiment.compassTest").second;
+            fitnessComparisonTest = settings->value<bool>("experiment.fitnessComparisonTest").second;
+            printInputsOutputs = settings->value<bool>("experiment.printInputsOutputs").second;
             
             babbling->loadParameters("experiment");
             world->initialize();
-            std::cout << "FastSim_MultiRobot_Phototaxis: Parameters loaded." << std::endl;
+            std::cout << "FastSim_MultiRobot_Phototaxis_Compass: Parameters loaded." << std::endl;
         }
         catch (std::exception e) {
-            std::cerr << "FastSim_MultiRobot_Phototaxis: Error loading the parameters: " << e.what() << std::endl;
+            std::cerr << "FastSim_MultiRobot_Phototaxis_Compass: Error loading the parameters: " << e.what() << std::endl;
             exit(1);
         }
         
@@ -193,13 +196,31 @@ namespace MDB_Social {
             rev->setRobotRadius(world->getRobot()->get_radius());
             rev->addZone(rewardZoneDiameter/2.0, wwidth/2.0, wwidth/2.0, REV::Color(127, 127, 127, 255)); // START
 #else
-            std::cerr << "FastSim_MultiRobot_Phototaxis: the REV viewer is not compiled in." << std::endl;
+            std::cerr << "FastSim_MultiRobot_Phototaxis_Compass: the REV viewer is not compiled in." << std::endl;
 #endif            
         }
         
     }
 
-    void FastSim_MultiRobot_Phototaxis::preprocessing() 
+    
+    void FastSim_MultiRobot_Phototaxis_Compass::installGenotype(Genotype& individual)
+    {
+        std::vector<FeedforwardNN::weight_t> weights(individual.getSize());
+        
+        controller->getWeights(weights);
+
+        if (weights.size() != individual.getSize()) {
+            std::cerr << "FastSim_MultiRobot_Phototaxis_Compass: Size of the genotype (size = " << individual.getSize() << ") differs from the size of the network (size = " << weights.size() << ")." << std::endl;
+            exit(1);
+        }
+        
+        for (unsigned i=0; i<individual.getSize(); ++i) {
+            weights[i].weight =  (controllerMaximumWeight - controllerMinimumWeight)*individual[i] + controllerMinimumWeight;
+        }
+        controller->setWeights(weights);
+    }
+
+    void FastSim_MultiRobot_Phototaxis_Compass::preprocessing() 
     {
         // Let's get the list of robots.
         SocialManagerClient* smclient = resourceLibrary->getSocialManagerClient();
@@ -210,10 +231,10 @@ namespace MDB_Social {
             smclient->synchronise();
             std::vector<std::string> robotIds = smclient->getRobotIDs();
             // We choose one random robot
-            unsigned other_robot;
-            do
-                other_robot = lrand48() % robotIds.size();
-            while (robotIds[other_robot] == getID());
+//            unsigned other_robot;
+//            do
+//                other_robot = lrand48() % robotIds.size();
+//            while (robotIds[other_robot] == getID());
             // Retrieve its genotypes
             
             ValueFunction* vf = resourceLibrary->getValueFunction();
@@ -221,8 +242,10 @@ namespace MDB_Social {
             ValueFunctionMemory* vfm;
             
             for (unsigned i=0; i<robotIds.size(); ++i) {
-                vfm = smclient->getValueFunctionMemory(robotIds[i]);
-                vf->addImportedValueFunction(vfm);
+                if (robotIds[i] != getID()) {
+                    vfm = smclient->getValueFunctionMemory(robotIds[i]);
+                    vf->addImportedValueFunction(vfm);
+                }
             }
             
             // Find the best policy and replace the worst current one
@@ -251,30 +274,13 @@ namespace MDB_Social {
         }        
     }
     
-    void FastSim_MultiRobot_Phototaxis::postprocessing() 
+    void FastSim_MultiRobot_Phototaxis_Compass::postprocessing() 
     {
         
     }
-
     
-    void FastSim_MultiRobot_Phototaxis::installGenotype(Genotype& individual)
-    {
-        std::vector<FeedforwardNN::weight_t> weights(individual.getSize());
-        
-        controller->getWeights(weights);
-
-        if (weights.size() != individual.getSize()) {
-            std::cerr << "FastSim_MultiRobot_Phototaxis: Size of the genotype (size = " << individual.getSize() << ") differs from the size of the network (size = " << weights.size() << ")." << std::endl;
-            exit(1);
-        }
-        
-        for (unsigned i=0; i<individual.getSize(); ++i) {
-            weights[i].weight =  (controllerMaximumWeight - controllerMinimumWeight)*individual[i] + controllerMinimumWeight;
-        }
-        controller->setWeights(weights);
-    }
-
-    void FastSim_MultiRobot_Phototaxis::logRobotPosition(unsigned trial, unsigned epoch)
+    
+    void FastSim_MultiRobot_Phototaxis_Compass::logRobotPosition(unsigned trial, unsigned epoch)
     {
         if (logRobotPos) {
             double x = world->getRobot()->get_pos().get_x();
@@ -285,7 +291,7 @@ namespace MDB_Social {
         
     }
     
-    void FastSim_MultiRobot_Phototaxis::relocateRobot()
+    void FastSim_MultiRobot_Phototaxis_Compass::relocateRobot()
     {
         double w = world->getMapWidth();
         
@@ -298,7 +304,7 @@ namespace MDB_Social {
         world->moveRobot(x, y, orient);
     }
 
-    bool FastSim_MultiRobot_Phototaxis::computeReward()
+    bool FastSim_MultiRobot_Phototaxis_Compass::computeReward()
     {
         // Compute the distance between the goal and the robot, and compute the reward accordingly.
         double x = world->getRobot()->get_pos().get_x();
@@ -314,16 +320,67 @@ namespace MDB_Social {
         return dist <= rewardZoneDiameter*rewardZoneDiameter;
         
     }
-    
-    double FastSim_MultiRobot_Phototaxis::evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual)
+
+    double FastSim_MultiRobot_Phototaxis_Compass::computeDistance()
     {
-        testIndividual = _testIndividual;
+        // Compute the distance between the goal and the robot, and compute the reward accordingly.
+        double x = world->getRobot()->get_pos().get_x();
+        double y = world->getRobot()->get_pos().get_y();
+        
+        fastsim::Map::ill_sw_t ilswitch = world->getMap()->get_illuminated_switch_by_color(1);
+        double ilx = ilswitch->get_x();
+        double ily = ilswitch->get_y();
+        double dist = sqrt(pow(x-ilx, 2.0)+ pow(y-ily, 2.0));
+        
+//        std::cout << "Phototaxis : dist = " << dist << std::endl;
+        
+        return dist;
+        
+    }
+    
+    FastSim_MultiRobot_Phototaxis_Compass::compass_info_t FastSim_MultiRobot_Phototaxis_Compass::computeCompass()
+    {
+        compass_info_t ret;
+        double x = world->getRobot()->get_pos().get_x();
+        double y = world->getRobot()->get_pos().get_y();
+        double rorientation = world->getRobot()->get_pos().theta();
+        
+        boost::shared_ptr<fastsim::Map> map = world->getMap();
+        std::vector<fastsim::Map::ill_sw_t> lights = map->get_illuminated_switches();
+        double gx = lights[0]->get_x();
+        double gy = lights[0]->get_y();
+        double max_distance_squared = gx*gx+gy*gy;
+
+        ret.orientation = atan2((-y+gy),(gx-x)) - rorientation;
+        if (ret.orientation < -M_PI)
+            ret.orientation += 2*M_PI;
+//        if (ret.orientation < 0.0)
+//            ret.orientation += 2*M_PI;
+
+        double abx = x-gx;
+        double aby = y-gy;
+        ret.distance = (abx*abx + aby*aby) / max_distance_squared;
+
+        return ret;
+    }
+
+    
+    
+    double FastSim_MultiRobot_Phototaxis_Compass::evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual)
+    {
         // In this experiment we evolve and test a policy. The policy uses the value function and the current state to decide what the next action should be.
         // This part only cares about the policy.
         // A reward will be given when the robot reaches a given distance from the light source.
         
+        testIndividual = _testIndividual;
+        
         if (valueFunctionTest) {
             testValueFunction();
+            return -1.0;
+        }
+        
+        if (compassTest) {
+            testCompass();
             return -1.0;
         }
         
@@ -332,18 +389,19 @@ namespace MDB_Social {
         std::cout << "* ";
         std::cout.flush();
         
-        std::vector<double> lightSensors;
+//        std::vector<double> lightSensors;
+        compass_info_t compass;
         std::vector<double> laserSensors;
         std::vector<double> nninputs(nbinputs);
         std::vector<double> nnoutput(nboutputs);
         bool reward;
         double tVFF= thresholdForVFasFitness; // * thresholdForVFasFitness;
         
-        world->getLightSensors(lightSensors);   // Should be only one sensor
-        if (nbinputs != lightSensors.size()*(1+useSeeTheLightInputs)+8) {
-            std::cerr << "FastSim_Phototataxis: Error: nbinputs should be " << 2*(1+useSeeTheLightInputs)+8 << std::endl;
-            exit(0);
-        }
+//        world->getLightSensors(lightSensors);   // Should be only one sensor
+//        if (nbinputs != lightSensors.size()*(1+useSeeTheLightInputs)+8) {
+//            std::cerr << "FastSim_Phototataxis: Error: nbinputs should be " << 2*(1+useSeeTheLightInputs)+8 << std::endl;
+//            exit(0);
+//        }
         
         if (logRobotPos) {
             std::string tmp = cwd + "/robotPositions.log";
@@ -375,11 +433,16 @@ namespace MDB_Social {
         unsigned epoch;
         unsigned index;
         
+        double closest;
+        double fartest;
+        double distFitness = 0.0;
+        double dist;
+        
         if (showFastSimViewer) {
             if (!world->activateViewer(true))
-                std::cout << Color::Modifier(Color::FG_RED) << "FastSim_MultiRobot_Phototaxis: ERROR: fastsim viewer not compiled in. Activate it using cmake -DUSE_FASTSIM_VIEWER=ON" << Color::Modifier(Color::FG_DEFAULT) << std::endl;
+                std::cout << Color::Modifier(Color::FG_RED) << "FastSim_MultiRobot_Phototaxis_Compass: ERROR: fastsim viewer not compiled in. Activate it using cmake -DUSE_FASTSIM_VIEWER=ON" << Color::Modifier(Color::FG_DEFAULT) << std::endl;
             else {
-                std::cout << "FastSim_MultiRobot_Phototaxis: Viewer activated." << std::endl;
+                std::cout << "FastSim_MultiRobot_Phototaxis_Compass: Viewer activated." << std::endl;
             }
         }
         
@@ -394,11 +457,17 @@ namespace MDB_Social {
                 rev->setRobotPosition(x, y, orient);
             }
 #endif            
+            
+            if (fitnessComparisonTest) {
+                closest = computeDistance();
+                fartest = closest;
+            }
+            
             onRewardZoneCounter = 0;
             enoughTimeOnReward = false;
             lreward = 0.0;
             for (epoch = 0; epoch < epochCount && !enoughTimeOnReward; ++epoch) {
-                world->getLightSensors(lightSensors);   // Should be only one sensor
+//                world->getLightSensors(lightSensors);   // Should be only one sensor
                 reward = computeReward();
                 if (reward > 1e-6)
                     onRewardZoneCounter++;
@@ -407,20 +476,15 @@ namespace MDB_Social {
                 enoughTimeOnReward = endTrialWhenOnReward && onRewardZoneCounter >= maxTimeOnReward;
 
                 world->getLaserSensors(laserSensors);
-
+                compass = computeCompass();
+                
                 index = 0;
-                nninputs[index++] = lightSensors[0];
-                if (useSeeTheLightInputs)
-                    nninputs[index++] = lightSensors[0] < 0.9;
-                if (lightSensors.size() > 1) {
-                    nninputs[index++] = lightSensors[1];
-                    if (useSeeTheLightInputs)
-                        nninputs[index++] = lightSensors[1] < 0.9;
-                }
+                nninputs[index++] = compass.orientation;
+                nninputs[index++] = compass.distance;
                 std::copy(laserSensors.begin(), laserSensors.end(), nninputs.begin()+index);
 
                 //                nninputs[nbinputs-1] = 1.0;   // bias
-                if (testIndividual) {
+                if (testIndividual && printInputsOutputs) {
                     std::cout << "Inputs = ";
                     for (unsigned i=0; i<nbinputs; ++i)
                         std::cout << nninputs[i] << " ";
@@ -454,6 +518,18 @@ namespace MDB_Social {
                     sensorLogFile << nnoutput[0] << " " << nnoutput[1] << std::endl;
                 }
                 
+                if (fitnessComparisonTest) {
+                    dist = computeDistance();
+
+                    if (dist > fartest) {
+                        closest = dist;
+                        fartest = dist;
+                    }
+                    else if (dist < closest)
+                        closest = dist;
+                }
+                
+                
                 // I need to record the trace in the traceMemory
                 trace.true_reward = reward;
                 trace.inputs = nninputs;
@@ -470,8 +546,7 @@ namespace MDB_Social {
                 }
 
                 if (!useOnlyRewardedStates || (useOnlyRewardedStates && (trace.true_reward > 1e-6 || trace.estimated_reward > 1e-6))) {
-                    if (!useTracesWhenLightVisible || (useTracesWhenLightVisible && (nninputs[0] < 0.8 || nninputs[1] < 0.8)))
-                        tm->push_back(trace);
+                    tm->push_back(trace);
                 }
                 
 //                rewardTotal += std::max((double)reward, trace.estimated_reward);
@@ -482,6 +557,10 @@ namespace MDB_Social {
                 std::cout << "Trial " << trial << " : total reward = " << lreward << " for " << epoch << " timesteps" << std::endl;
             }
             rewardTotal += lreward / epoch;
+            
+            if (fitnessComparisonTest)
+                distFitness += (fartest-closest)/fartest; //+ (1.0*epoch) / epochCount;
+
         }
 
 //        std::cout << "Phototaxis: rewardTotal = " << rewardTotal << " ; fitness = " << (rewardTotal*1.0)/(1.0*trialCount*epochCount) << std::endl;
@@ -492,10 +571,20 @@ namespace MDB_Social {
         if (sensorLog)
             sensorLogFile.close();
         
+        if (fitnessComparisonTest) {
+            std::ofstream fcfile("fitnessComparisonTest.log", std::ios_base::app);
+            if (!fcfile.is_open()) {
+                std::cerr << "FastSim_MultiRobot_Phototaxis_Compass: Error opening the log file fitnessComparisonTest.log." << std::endl;
+                exit(1);
+            }
+            fcfile << rewardTotal/(1.0*trialCount) << " " << distFitness / (1.0*trialCount) << std::endl;
+            fcfile.close();
+        }
+        
         return rewardTotal/(1.0*trialCount);
     }
 
-    void FastSim_MultiRobot_Phototaxis::testValueFunction()
+    void FastSim_MultiRobot_Phototaxis_Compass::testValueFunction()
     {
         // This function tests the value function by placing the robot following a grid and measuring the response of the VF.
         // The robot will be tested with multiple orientations: one facing the light, one facing away from it.
@@ -509,7 +598,7 @@ namespace MDB_Social {
         double deltay = 1.0;
         double orient = 0.0;
 
-        std::vector<double> lightSensors;
+        compass_info_t compass;
         std::vector<double> laserSensors;
         std::vector<double> nninputs(nbinputs);
         std::vector<double> nnoutput(nboutputs);
@@ -549,19 +638,12 @@ namespace MDB_Social {
                     world->moveRobot(x, y, orient);
 
 
-                    world->getLightSensors(lightSensors);   // Should be only one sensor
-
                     world->getLaserSensors(laserSensors);
+                    compass = computeCompass();
 
                     index = 0;
-                    nninputs[index++] = lightSensors[0];
-                    if (useSeeTheLightInputs)
-                        nninputs[index++] = lightSensors[0] < 0.9;
-                    if (lightSensors.size() > 1) {
-                        nninputs[index++] = lightSensors[1];
-                        if (useSeeTheLightInputs)
-                            nninputs[index++] = lightSensors[1] < 0.9;
-                    }
+                    nninputs[index++] = compass.orientation;
+                    nninputs[index++] = compass.distance;
                     std::copy(laserSensors.begin(), laserSensors.end(), nninputs.begin()+index);
 //                    nninputs[nbinputs-1] = 1.0;   // bias
 
@@ -586,6 +668,64 @@ namespace MDB_Social {
             }
         }
         outfile.close();
+    }
+
+    void FastSim_MultiRobot_Phototaxis_Compass::testCompass()
+    {
+
+        // Need to put the robot 
+
+        boost::shared_ptr<fastsim::Map> map = world->getMap();
+        std::vector<fastsim::Map::ill_sw_t> lights = map->get_illuminated_switches();
+        double gx = lights[0]->get_x();
+        double gy = lights[0]->get_y();
+
+        double x;
+        double y;
+        double orient;
+
+        std::string labels[4] = {"TOP", "RIGHT", "BOTTOM", "LEFT"};
+        const double delta = M_PI / 36.0;
+        compass_info_t compass;
+                
+        for (unsigned p=0; p<4; ++p) {
+            std::cout << "**** Testing position " << labels[p] << std::endl;
+            switch (p) {
+                case 0:  // TOP
+                    x = gx;
+                    y = gy/2.0;
+                    break;
+                case 1:  // RIGHT
+                    x = gx * 1.5;
+                    y = gy;
+                    break;
+                case 2: // BOTTOM
+                    x = gx;
+                    y = gy*1.5;
+                    break;
+                case 3: // LEFT
+                    x = gx * 0.5;
+                    y = gy;
+                    break;
+                default:
+                    break;
+            }
+            orient = 0.0;
+            world->getRobot()->reinit();
+            world->moveRobot(x, y, orient);
+            
+            for (orient = 0.0; orient < 2.0*M_PI; orient += delta) {
+                world->moveRobot(x, y, orient);
+                world->updateRobot(0.0, 0.0);
+                world->step();
+                
+                compass = computeCompass();
+                std::cout << "    robot orient = " << orient << " ; compass orient = " << compass.orientation << " ; distance = " << compass.distance << std::endl;
+            }
+            std::cout << "---------------------------------------------------" << std::endl;
+            
+        }
+        
     }
 
     

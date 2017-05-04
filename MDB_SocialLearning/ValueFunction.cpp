@@ -20,7 +20,8 @@
 
 namespace MDB_Social {
 
-    ValueFunction::ValueFunction() 
+    ValueFunction::ValueFunction(std::string id)
+    : RobotID(id)
     {
         vf = NULL;
         quality = 0.0;
@@ -29,6 +30,7 @@ namespace MDB_Social {
         useOnlyRewardedTraces = false;
         rewardThreshold = 0.0;
         vfMergingMode = UNDEFINED;
+        famtester = NULL;
     }
 
     ValueFunction::~ValueFunction() 
@@ -67,6 +69,18 @@ namespace MDB_Social {
         
         useOnlyRewardedTraces = settings->value<bool>("ValueFunction.useOnlyRewardedTraces").second;
         rewardThreshold = settings->value<double>("ValueFunction.rewardThreshold").second;
+        
+        std::string mergemode = settings->value<std::string>("ValueFunction.vfMergingMode").second;
+        if (mergemode == "AVERAGE")
+            vfMergingMode = AVERAGE;
+        else if (mergemode == "SUM")
+            vfMergingMode = SUM;
+        else if (mergemode == "UNDEFINED")
+            vfMergingMode = UNDEFINED;
+        else {
+            std::cerr << "ValueFunction: Unknown merging mode selected: " << mergemode << std::endl;
+            exit(1);
+        }
         
     }
 
@@ -362,7 +376,7 @@ namespace MDB_Social {
     {
         // TODO: Consider different types of models between robots.
         Model* addvf;
-        addvf = ModelLibrary::getModel(valueFunctionType);
+        addvf = ModelLibrary::getModel(valueFunctionType, getID());
         addvf->setExternalMemory(vfmem);
         addvf->loadParameters("ValueFunction");
         addvf->initializeFromParameters();
@@ -371,5 +385,13 @@ namespace MDB_Social {
 
         additionalVFs.push_back(addvf);
     }
+    
+    void ValueFunction::clearImportedValueFunction()
+    {
+         for (auto it = additionalVFs.begin(); it != additionalVFs.end(); ++it)
+            delete *it;
+        additionalVFs.clear();
+   }
+
    
 }

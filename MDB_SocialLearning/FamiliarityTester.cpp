@@ -20,7 +20,7 @@ namespace MDB_Social {
     {
         queryPt = annAllocPt(dim); // allocate query point
         dataPts = annAllocPts(maxPts, dim); // allocate data points
-        nnIdx = new ANNidx[nearestCount]; // allocate near neigh indices
+        nnIdx = new ANNidx[nearestCount]; // allocate near neighbor indices
         dists = new ANNdist[nearestCount]; // allocate near neighbor dists   
         kdTree = NULL;
         currentPts = 0;
@@ -30,7 +30,8 @@ namespace MDB_Social {
     {
         delete[] nnIdx;
         delete[] dists;
-        delete kdTree;
+        if (kdTree)
+            delete kdTree;
         annClose();
     }
 

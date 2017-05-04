@@ -31,7 +31,7 @@ namespace MDB_Social {
     private:
         static Model* getFeedforward(std::string id) {
 #ifdef USE_FANN
-            return new FeedforwardNN();
+            return new FeedforwardNN(id);
 #else
             std::cerr << "Model Library Error: getFeedforward has no model to propose. Compile with the FANN option to use the FANN library." << std::endl;
             return NULL;
@@ -39,7 +39,7 @@ namespace MDB_Social {
         }
         
         static Model* getBabblingStandard(std::string id) {
-            return new BabblingStandard();
+            return new BabblingStandard(id);
         }
         
     public:
