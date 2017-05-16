@@ -18,39 +18,33 @@ namespace MDB_Social {
     FamiliarityTester::FamiliarityTester(unsigned _maxPts, unsigned _dim, unsigned _nearestCount) 
         : maxPts(_maxPts), dim(_dim), nearestCount(_nearestCount)
     {
-        queryPt = annAllocPt(dim); // allocate query point
-        dataPts = annAllocPts(maxPts, dim); // allocate data points
-        nnIdx = new ANNidx[nearestCount]; // allocate near neighbor indices
-        dists = new ANNdist[nearestCount]; // allocate near neighbor dists   
-        kdTree = NULL;
+        queryPt.resize(dim,1);
+        dataPts.resize(dim, maxPts);
+        knnSearch = new mlpack::neighbor::AllkNN(mlpack::neighbor::GREEDY_SINGLE_TREE_MODE, 0.1);
+        
         currentPts = 0;
     }
 
     FamiliarityTester::~FamiliarityTester() 
     {
-        delete[] nnIdx;
-        delete[] dists;
-        if (kdTree)
-            delete kdTree;
-        annClose();
+        delete knnSearch;
     }
 
     void FamiliarityTester::setTrainingSet(TraceMemory* mem)
     {
         currentPts = 0;
-        if (kdTree)
-            delete kdTree;
         
         // Read the data.
         auto itend = mem->end();
         for (auto it = mem->begin(); currentPts < maxPts && it != itend; ++it) {
             it->usedForVFTraining = true;
             for (unsigned i=0; i<dim; ++i)
-                dataPts[currentPts][i] = it->inputs[i];
+                dataPts(i,currentPts) = it->inputs[i];
             currentPts++;
         }
         
-        kdTree = new ANNkd_tree(dataPts, currentPts, dim);
+        knnSearch->Train(dataPts.cols(0,currentPts-1));
+//        kdTree = new ANNkd_tree(dataPts, currentPts, dim);
     }
 
     void FamiliarityTester::setTrainingSet(TraceMemory* mem, std::vector<bool>& mask)
@@ -61,8 +55,6 @@ namespace MDB_Social {
         }
         
         currentPts = 0;
-        if (kdTree)
-            delete kdTree;
         
         // Read the data.
         unsigned index = 0;
@@ -71,24 +63,26 @@ namespace MDB_Social {
             if (mask[index++]) {
                 it->usedForVFTraining = true;
                 for (unsigned i=0; i<dim; ++i)
-                    dataPts[currentPts][i] = it->inputs[i];
+                    dataPts(i,currentPts) = it->inputs[i];
                 currentPts++;
             }
             else
                 it->usedForVFTraining = false;
         }
         
-        kdTree = new ANNkd_tree(dataPts, currentPts, dim);
+        knnSearch->Train(dataPts.cols(0,currentPts-1));
     }
 
     
     double FamiliarityTester::getClosestNeighbour(Trace& trace)
     {
         for (unsigned i=0; i<dim; ++i)
-            queryPt[i] = trace.inputs[i];
+            queryPt(i,0) = trace.inputs[i];
         
-        kdTree->annkSearch(queryPt, nearestCount, nnIdx, dists);
-        return dists[0];
+        knnSearch->Search(queryPt, 1, resultingNeighbors, resultingDistances);
+//        kdTree->annkSearch(queryPt, nearestCount, nnIdx, dists);
+        return resultingDistances(0,0);
+//        return dists[0];
     }
     
 }

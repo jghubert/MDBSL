@@ -14,7 +14,8 @@
 #ifndef FAMILIARITYTESTER_H
 #define FAMILIARITYTESTER_H
 
-#include "ann/include/ANN/ANN.h"
+//#include "ann/include/ANN/ANN.h"
+#include <mlpack/methods/neighbor_search/neighbor_search.hpp>
 #include "TraceMemory.h"
 #include <vector>
 
@@ -22,11 +23,17 @@ namespace MDB_Social {
 
     class FamiliarityTester {
     private:
-        ANNpointArray dataPts; // data points
-        ANNpoint queryPt; // query point
-        ANNidxArray nnIdx; // near neighbor indices
-        ANNdistArray dists; // near neighbor distances
-        ANNkd_tree* kdTree; // search structure    
+        arma::mat dataPts;
+	arma::Mat<size_t> resultingNeighbors;
+	arma::mat resultingDistances;
+	arma::mat queryPt;
+        mlpack::neighbor::AllkNN* knnSearch;
+
+//        ANNpointArray dataPts; // data points
+//        ANNpoint queryPt; // query point
+//        ANNidxArray nnIdx; // near neighbor indices
+//        ANNdistArray dists; // near neighbor distances
+//        ANNkd_tree* kdTree; // search structure    
         
         unsigned maxPts;
         unsigned currentPts;
