@@ -419,6 +419,44 @@ namespace MDB_Social {
         return ret;
     }
 
+    FastSim_Forage_Wall::compass_info_t FastSim_Forage_Wall::computeCompassTarget()
+    {
+        compass_info_t ret;
+        double x = world->getRobot()->get_pos().get_x();
+        double y = world->getRobot()->get_pos().get_y();
+        double rorientation = world->getRobot()->get_pos().theta();
+
+        double center = world->getMapWidth()/2.0;
+        ret.orientation = atan2((-y+w),(w-x)) - rorientation;
+        if (ret.orientation < -M_PI)
+            ret.orientation += 2*M_PI;
+
+        ret.distance = computeDistanceTarget();
+        
+        return ret;
+    }
+    
+    FastSim_Forage_Wall::compass_info_t FastSim_Forage_Wall::computeCompassClosestPuck()
+    {
+        compass_info_t ret;
+        ret.distance = -1.0;
+        ret.orientation = -1.0;
+
+        std::pair<int, double> dcb = computeDistanceClosestBall();
+        if (dcb.first != -1) {
+            ret.distance = dcb.second;
+            
+            double x = world->getRobot()->get_pos().get_x();
+            double y = world->getRobot()->get_pos().get_y();
+            double rorientation = world->getRobot()->get_pos().theta();
+            
+            ret.orientation = atan2((-y+pucksList[dcb.first].y),(pucksList[dcb.first].x-x)) - rorientation;
+            if (ret.orientation < -M_PI)
+                ret.orientation += 2*M_PI;
+        }
+        
+        return ret;
+    }
     
     
     double FastSim_Forage_Wall::evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual)
@@ -556,10 +594,8 @@ namespace MDB_Social {
                 world->updateRobot(timestep*(nnoutput[0]*2*maxSpeed-maxSpeed), timestep*(nnoutput[1]*2*maxSpeed-maxSpeed));
                 world->step();
 
-                if (reward) {
-                    pucksList[carryingPuck].visible = true;
+                if (reward)
                     relocateBall(carryingPuck);
-                }
                 
 #ifdef USE_REV
                 if (showREV) {
