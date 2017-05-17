@@ -117,7 +117,7 @@ namespace MDB_Social {
         B.outputs = outputs;
         Trace A;
         
-        TraceMemory::const_reverse_iterator it = traceMemory->rend();
+        TraceMemory::const_reverse_iterator it = traceMemory->rbegin();
         unsigned k=0;
         for (; k<ntl && it != traceMemory->rend(); ++k) {
             A = *it;

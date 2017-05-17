@@ -431,8 +431,9 @@ namespace MDB_Social {
                 }
                 
                 
-                if (useBabbling)
+                if (useBabbling) {
                     nnoutput = babbling->run(nninputs);
+                }
                 else
                     controller->run(nninputs, nnoutput);
                 
