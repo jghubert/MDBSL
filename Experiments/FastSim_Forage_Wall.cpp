@@ -113,6 +113,7 @@ namespace MDB_Social {
         settings->registerParameter<unsigned>("experiment.maxTimeOnReward", 0, "Maximum time allowed in the reward zone before ending the trial.");
         settings->registerParameter<bool>("experiment.showFastSimViewer", false, "Show the fastsim viewer for the simulator.");
         settings->registerParameter<bool>("experiment.showREV", false, "Show REV viewer for the simulator.");
+        settings->registerParameter<unsigned>("experiment.REVsizeMultiplicator", 2, "Increase the default size of the REV viewer by this factor");
         settings->registerParameter<bool>("experiment.realtime", false, "Play the experiment in realtime in the viewer.");
         settings->registerParameter<unsigned>("experiment.framerate", 25, "Framerate used to display the experiment in the viewer.");
 //        settings->registerParameter<bool>("experiment.compassTest", false, "Test the compass output by rotating the robot at different location and printing the readings.");
@@ -155,6 +156,7 @@ namespace MDB_Social {
             maxTimeOnReward = settings->value<unsigned>("experiment.maxTimeOnReward").second;
             showFastSimViewer = settings->value<bool>("experiment.showFastSimViewer").second;
             showREV = settings->value<bool>("experiment.showREV").second;
+            REVsizeMultiplicator = settings->value<unsigned>("experiment.REVsizeMultiplicator").second;
             realtime = settings->value<bool>("experiment.realtime").second;
             framerate = settings->value<unsigned>("experiment.framerate").second;
 //            compassTest = settings->value<bool>("experiment.compassTest").second;
@@ -207,7 +209,7 @@ namespace MDB_Social {
             rev->addZone(rewardZoneDiameter/2.0, wwidth/2.0, wwidth/2.0, REV::Color(127, 127, 127, 255)); // START
             rev->addZone(diameterTarget/2.0, wwidth/2.0, wwidth/2.0, REV::Color(0, 0, 0, 255));
             
-            puckREVIndexStart = rev->addZone(diameterPuck / 2.0, wwidth/2.0, wwidth/2.0, REV::Color(0, 127, 0, 255));;
+            puckREVIndexStart = rev->addZone(diameterPuck / 2.0, wwidth/2.0, wwidth/2.0, REV::Color(0, 127, 0, 255));
             for (unsigned i=1; i<numberBalls; ++i)
                 rev->addZone(diameterPuck / 2.0, wwidth/2.0, wwidth/2.0, REV::Color(0, 127, 0, 255));
             
@@ -258,8 +260,8 @@ namespace MDB_Social {
         double y;
         
         do {
-        x = drand48() * (w*0.94 - 2*robotRadius)+robotRadius*1.1;
-        y = drand48() * (w*0.94 - 2*robotRadius)+robotRadius*1.1;
+            x = drand48() * (w*0.94 - 2*robotRadius)+robotRadius*1.1;
+            y = drand48() * (w*0.94 - 2*robotRadius)+robotRadius*1.1;
         } while (checkCollisionAllPucks(x,y,robotRadius*2)!=-1 ||  checkCollisionTarget(x,y,robotRadius*2));
             
         double orient = drand48() * M_2_PI;
@@ -293,6 +295,7 @@ namespace MDB_Social {
         pucksList[p].x = x;
         pucksList[p].y = y;
         pucksList[p].visible = true;
+        pucksList[p].d = diameterPuck;
         
         if (showREV) {
 #ifdef USE_REV
@@ -303,7 +306,7 @@ namespace MDB_Social {
         }                
     }
     
-    bool FastSim_Forage_Wall::checkCollisionRobot(double x, double y, double d)
+    bool FastSim_Forage_Wall::checkCollisionTarget(double x, double y, double d)
     {
         bool collision = false;
         double w = world->getMapWidth()/2.0;
@@ -318,7 +321,7 @@ namespace MDB_Social {
     }
     
     
-    bool FastSim_Forage_Wall::checkCollisionTarget(double x, double y, double d)
+    bool FastSim_Forage_Wall::checkCollisionRobot(double x, double y, double d)
     {
         bool collision = false;
         double robotX = world->getRobot()->get_pos().get_x();

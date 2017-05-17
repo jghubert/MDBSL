@@ -73,6 +73,7 @@ namespace MDB_Social {
         unsigned maxTimeOnReward;
         bool showFastSimViewer;
         bool showREV;
+        unsigned REVsizeMultiplicator;
         bool realtime;
         unsigned framerate;
         bool printInputsOutputs;
