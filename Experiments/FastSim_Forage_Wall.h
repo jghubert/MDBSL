@@ -111,7 +111,7 @@ namespace MDB_Social {
         
         bool checkCollisionTarget(double x, double y, double d);
         
-        bool checkCollisionAllPucks(double x, double y, double d);
+        unsigned checkCollisionAllPucks(double x, double y, double d);
         
         bool checkCollisionOnePuck(double x, double y, double d, unsigned p);
         

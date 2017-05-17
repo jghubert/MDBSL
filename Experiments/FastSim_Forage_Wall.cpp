@@ -254,7 +254,7 @@ namespace MDB_Social {
         do {
         x = drand48() * (w*0.94 - 2*robotRadius)+robotRadius*1.1;
         y = drand48() * (w*0.94 - 2*robotRadius)+robotRadius*1.1;
-        } while (checkCollisionAllPucks(x,y,robotRadius*2) ||  checkCollisionTarget(x,y,robotRadius*2));
+        } while (checkCollisionAllPucks(x,y,robotRadius*2)!=-1 ||  checkCollisionTarget(x,y,robotRadius*2));
             
         double orient = drand48() * M_2_PI;
         world->getRobot()->reinit();
@@ -305,13 +305,15 @@ namespace MDB_Social {
         return collision;
     }
     
-    bool FastSim_Forage_Wall::checkCollisionAllPucks(double x, double y, double d)
+    unsigned FastSim_Forage_Wall::checkCollisionAllPucks(double x, double y, double d)
     {
-        bool collision = false;
+        unsigned collision=-1;
         
         //check collision per puck
-        for (unsigned p=0; p<numberBalls  && !collision ; ++p) {
-            collision = checkCollisionOnePuck(x,y,d,p);
+        for (unsigned p=0; p<numberBalls  && collision==-1 ; ++p) {
+            if(checkCollisionOnePuck(x,y,d,p)) {
+                collision = p;
+            }
         }
         
         return collision;
