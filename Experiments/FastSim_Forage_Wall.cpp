@@ -294,12 +294,13 @@ namespace MDB_Social {
         pucksList[p].y = y;
         pucksList[p].visible = true;
         
+        if (showREV) {
 #ifdef USE_REV
-        rev->modifyZone(puckREVIndexStart+p, pucksList[p].d/2.0, x, y, REV::Color(0, 127, 0, 255));
-        rev->setZoneVisible(puckREVIndexStart+p, true);
+            rev->modifyZone(puckREVIndexStart+p, pucksList[p].d/2.0, x, y, REV::Color(0, 127, 0, 255));
+            rev->setZoneVisible(puckREVIndexStart+p, true);
 
 #endif        
-                
+        }                
     }
     
     bool FastSim_Forage_Wall::checkCollisionRobot(double x, double y, double d)
@@ -568,7 +569,9 @@ namespace MDB_Social {
                     if (puckCarried != -1) {
                         pucksList[puckCarried].visible = false;
 #ifdef USE_REV
-                        rev->setZoneVisible(puckREVIndexStart+puckCarried, false);
+                        if (showREV) {
+                            rev->setZoneVisible(puckREVIndexStart+puckCarried, false);
+                        }
 #endif        
                     }
                 }
