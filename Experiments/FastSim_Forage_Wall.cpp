@@ -404,12 +404,14 @@ namespace MDB_Social {
     {
         double w = world->getMapWidth()/2.0;
         double robotRadius = world->getRobot()->get_radius();
+        double x = world->getRobot()->get_pos().get_x();
+        double y = world->getRobot()->get_pos().get_y();
 
         return sqrt(pow(x-w,2.0) + pow(y-w,2.0)) - robotRadius - diameterTarget*0.5;
     }
 
     
-    FastSim_Forage_Wall::compass_info_t FastSim_Forage_Wall::computeCompass()
+    /*FastSim_Forage_Wall::compass_info_t FastSim_Forage_Wall::computeCompass()
     {
         compass_info_t ret;
         double x = world->getRobot()->get_pos().get_x();
@@ -433,7 +435,7 @@ namespace MDB_Social {
         ret.distance = (abx*abx + aby*aby) / max_distance_squared;
 
         return ret;
-    }
+    }*/
 
     FastSim_Forage_Wall::compass_info_t FastSim_Forage_Wall::computeCompassTarget()
     {
@@ -443,7 +445,7 @@ namespace MDB_Social {
         double rorientation = world->getRobot()->get_pos().theta();
 
         double center = world->getMapWidth()/2.0;
-        ret.orientation = atan2((-y+w),(w-x)) - rorientation;
+        ret.orientation = atan2((-y+center),(center-x)) - rorientation;
         if (ret.orientation < -M_PI)
             ret.orientation += 2*M_PI;
 
@@ -562,10 +564,10 @@ namespace MDB_Social {
             }
 #endif            
             
-            if (fitnessComparisonTest) {
+            /*if (fitnessComparisonTest) {
                 closest = computeDistance();
                 fartest = closest;
-            }
+            }*/
             
             lreward = 0.0;
             int puckCarried = -1;
@@ -611,7 +613,7 @@ namespace MDB_Social {
                 world->step();
 
                 if (reward)
-                    relocateBall(carryingPuck);
+                    relocateBall(puckCarried);
                 
 #ifdef USE_REV
                 if (showREV) {
@@ -667,7 +669,7 @@ namespace MDB_Social {
         if (sensorLog)
             sensorLogFile.close();
         
-        if (fitnessComparisonTest) {
+        /*if (fitnessComparisonTest) {
             std::ofstream fcfile("fitnessComparisonTest.log", std::ios_base::app);
             if (!fcfile.is_open()) {
                 std::cerr << "FastSim_Forage_Wall: Error opening the log file fitnessComparisonTest.log." << std::endl;
@@ -675,7 +677,7 @@ namespace MDB_Social {
             }
             fcfile << rewardTotal/(1.0*trialCount) << " " << distFitness / (1.0*trialCount) << std::endl;
             fcfile.close();
-        }
+        }*/
         
         return rewardTotal/(1.0*trialCount);
     }
@@ -735,7 +737,7 @@ namespace MDB_Social {
 
 
                     world->getLaserSensors(laserSensors);
-                    compass = computeCompass();
+                    //compass = computeCompass();
 
                     index = 0;
                     nninputs[index++] = compass.orientation;
@@ -766,7 +768,7 @@ namespace MDB_Social {
         outfile.close();
     }
 
-    void FastSim_Forage_Wall::testCompass()
+    /*void FastSim_Forage_Wall::testCompass()
     {
 
         // Need to put the robot 
@@ -822,7 +824,7 @@ namespace MDB_Social {
             
         }
         
-    }
+    }*/
 
     
 }
