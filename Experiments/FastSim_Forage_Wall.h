@@ -52,6 +52,8 @@ namespace MDB_Social {
 #ifdef USE_REV
         REV* rev;
         REVInit* revinit;
+        
+        unsigned puckREVIndexStart;
 #endif        
 
         std::vector<puck_location_t> pucksList;
@@ -76,11 +78,12 @@ namespace MDB_Social {
         bool printInputsOutputs;
         unsigned numberBalls;
         double diameterTarget;
+        double diameterPuck;
     
 
-        bool compassTest;
-        bool valueFunctionTest;
-        bool fitnessComparisonTest;
+//        bool compassTest;
+//        bool valueFunctionTest;
+//        bool fitnessComparisonTest;
         
         unsigned trialCount;
         unsigned epochCount;
@@ -125,13 +128,13 @@ namespace MDB_Social {
         
         void logRobotPosition(unsigned trial, unsigned epoch);
         
-        void testValueFunction();
+//        void testValueFunction();
         
         //J: change?
         compass_info_t computeCompassTarget();
         compass_info_t computeCompassClosestPuck();
         
-        void testCompass();
+//        void testCompass();
         
     public:
         FastSim_Forage_Wall(std::string id="Default");
