@@ -248,10 +248,13 @@ namespace MDB_Social {
         
         double robotRadius = world->getRobot()->get_radius();
         
+        double x;
+        double y;
+        
         do {
-        double x = drand48() * (w*0.94 - 2*robotRadius)+robotRadius*1.1;
-        double y = drand48() * (w*0.94 - 2*robotRadius)+robotRadius*1.1;
-        }while (checkCollisionAllPucks(x,y,robotRadius*2) ||  checkCollisionTarget(x,y,robotRadius*2))
+        x = drand48() * (w*0.94 - 2*robotRadius)+robotRadius*1.1;
+        y = drand48() * (w*0.94 - 2*robotRadius)+robotRadius*1.1;
+        } while (checkCollisionAllPucks(x,y,robotRadius*2)!=-1 ||  checkCollisionTarget(x,y,robotRadius*2));
             
         double orient = drand48() * M_2_PI;
         world->getRobot()->reinit();
@@ -273,12 +276,14 @@ namespace MDB_Social {
         
         double puckRadius = pucksList[p].d/2.0;
         
+        double x;
+        double y;
         do {
-        double x = drand48() * (w*0.94 - 2*puckRadius)+puckRadius*1.1;
-        double y = drand48() * (w*0.94 - 2*puckRadius)+puckRadius*1.1;
-        }while (checkCollisionOtherPucks(x,y,puckRadius*2,p) ||  checkCollisionTarget(x,y,puckRadius*2))
+        x = drand48() * (w*0.94 - 2*puckRadius)+puckRadius*1.1;
+        y = drand48() * (w*0.94 - 2*puckRadius)+puckRadius*1.1;
+        } while (checkCollisionOtherPucks(x,y,puckRadius*2,p) ||  checkCollisionTarget(x,y,puckRadius*2));
         
-        // TODO: add ball in the world!
+        // relocate ball
         pucksList[p].x = x;
         pucksList[p].y = y;
         pucksList[p].visible = true;
@@ -288,25 +293,27 @@ namespace MDB_Social {
     
     bool FastSim_Forage_Wall::checkCollisionTarget(double x, double y, double d)
     {
-        collision = false;
+        bool collision = false;
         double w = world->getMapWidth()/2.0;
             
         //check collision target. NOTE: only works if target is in squared center
-        dist = pow(x-w,2.0) + pow(y-w,2.0);
-        if (dist < pow(d/2.0+(diameterTarget/2.0),2.0) {
+        double dist = pow(x-w,2.0) + pow(y-w,2.0);
+        if (dist < pow(d/2.0+(diameterTarget/2.0),2.0)) {
             collision = true;
         }
                         
         return collision;
     }
     
-    bool FastSim_Forage_Wall::checkCollisionAllPucks(double x, double y, double d)
+    unsigned FastSim_Forage_Wall::checkCollisionAllPucks(double x, double y, double d)
     {
-        collision = false;
+        unsigned collision=-1;
         
         //check collision per puck
-        for (unsigned p=0; p<numberBalls  && !collision ; ++p) {
-            collision = checkCollisionOnePuck(x,y,d,p);
+        for (unsigned p=0; p<numberBalls  && collision==-1 ; ++p) {
+            if(checkCollisionOnePuck(x,y,d,p)) {
+                collision = p;
+            }
         }
         
         return collision;
@@ -314,11 +321,13 @@ namespace MDB_Social {
             
     bool FastSim_Forage_Wall::checkCollisionOtherPucks(double x, double y, double d, unsigned p)
     {
-        collision = false;
+        bool collision = false;
                 
         //check collision other pucks then given puck p
-        for (unsigned i=0; i<numberBalls  && !collision && !(i==p) ; ++i) {
-            collision = checkCollisionOnePuck(x,y,d,i);
+        for (unsigned i=0; i<numberBalls  && !collision ; ++i) {
+            if (!(i==p)){
+                collision = checkCollisionOnePuck(x,y,d,i);
+            }
         }
                 
         return collision;
@@ -328,10 +337,10 @@ namespace MDB_Social {
     bool FastSim_Forage_Wall::checkCollisionOnePuck(double x, double y, double d, unsigned p)
     {
         // check collision with specific puck id
-        collision = false;
+        bool collision = false;
         
-        dist = pow(x-pucksList[p].x, 2.0) + pow(y-pucksList[p].y,2.0);
-        if (dist < pow(d/2.0+(pucksList[p].d/2.0),2.0)
+        double dist = pow(x-pucksList[p].x, 2.0) + pow(y-pucksList[p].y,2.0);
+        if (dist < pow(d/2.0+(pucksList[p].d/2.0),2.0))
                 collision = true;
             
                             
