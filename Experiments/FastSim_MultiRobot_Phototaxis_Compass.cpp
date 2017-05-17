@@ -544,7 +544,7 @@ namespace MDB_Social {
 //                        std::cout << "trial:epoch " << trial << ":" << epoch << " -> familiarity = " << fam << std::endl;
                     }
                 }
-
+                
                 if (!useOnlyRewardedStates || (useOnlyRewardedStates && (trace.true_reward > 1e-6 || trace.estimated_reward > 1e-6))) {
                     tm->push_back(trace);
                 }

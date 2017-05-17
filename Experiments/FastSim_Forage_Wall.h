@@ -117,7 +117,8 @@ namespace MDB_Social {
         
         bool checkCollisionOtherPucks(double x, double y, double d, unsigned p);
         
-        double computeDistanceClosestBall();
+        double computeDistanceToPuck(unsigned p);
+        std::pair<int, double> computeDistanceClosestBall();
         double computeDistanceTarget();
         
         void logRobotPosition(unsigned trial, unsigned epoch);

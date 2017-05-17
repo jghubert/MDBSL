@@ -342,36 +342,47 @@ namespace MDB_Social {
     bool FastSim_Forage_Wall::computeReward()
     {
         // Compute the distance between the goal and the robot, and compute the reward accordingly.
-        double x = world->getRobot()->get_pos().get_x();
-        double y = world->getRobot()->get_pos().get_y();
-        
-        fastsim::Map::ill_sw_t ilswitch = world->getMap()->get_illuminated_switch_by_color(1);
-        double ilx = ilswitch->get_x();
-        double ily = ilswitch->get_y();
-        double dist = pow(x-ilx, 2.0)+ pow(y-ily, 2.0);
-        
-//        std::cout << "Phototaxis : dist = " << dist << std::endl;
-        
-        return dist <= rewardZoneDiameter*rewardZoneDiameter;
-        
+        return computeDistanceTarget() <= rewardZoneDiameter*0.5;
     }
 
-    double FastSim_Forage_Wall::computeDistance()
+    double FastSim_Forage_Wall::computeDistanceToPuck(unsigned p)
     {
-        // Compute the distance between the goal and the robot, and compute the reward accordingly.
         double x = world->getRobot()->get_pos().get_x();
         double y = world->getRobot()->get_pos().get_y();
-        
-        fastsim::Map::ill_sw_t ilswitch = world->getMap()->get_illuminated_switch_by_color(1);
-        double ilx = ilswitch->get_x();
-        double ily = ilswitch->get_y();
-        double dist = sqrt(pow(x-ilx, 2.0)+ pow(y-ily, 2.0));
-        
-//        std::cout << "Phototaxis : dist = " << dist << std::endl;
-        
+        double dist = -1.0;
+        if (pucksList[p].visible)
+            dist = sqrt(pow(x-pucksList[p].x, 2.0) + pow(y-pucksList[p].y, 2.0)) - pucksList[p].d*0.5;
+
         return dist;
-        
     }
+
+    
+    std::pair<int, double> FastSim_Forage_Wall::computeDistanceClosestBall()
+    {
+        double closestDist = 1e6;
+        int cindex = -1;
+        
+        double dist;
+        for (unsigned p=0; p<pucksList.size(); ++p) {
+            if (pucksList[p].visible) {
+                dist = computeDistanceToPuck(p);
+                if (dist < closestDist) {
+                    cindex = p;
+                    closestDist = dist;
+                }
+            }
+        }
+        return std::make_pair(cindex, closestDist);
+    }
+    
+    double FastSim_Forage_Wall::computeDistanceTarget()
+    {
+        double w = world->getMapWidth()/2.0;
+        double robotRadius = world->getRobot()->get_radius();
+
+        return sqrt(pow(x-w,2.0) + pow(y-w,2.0)) - robotRadius - diameterTarget*0.5;
+    }
+
     
     FastSim_Forage_Wall::compass_info_t FastSim_Forage_Wall::computeCompass()
     {
