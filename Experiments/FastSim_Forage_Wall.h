@@ -104,8 +104,18 @@ namespace MDB_Social {
         void relocateRobot();
         
         void relocateBalls();
+        
+        void relocateBall(unsigned p);
 
         bool computeReward();
+        
+        bool checkCollisionTarget(double x, double y, double d);
+        
+        bool checkCollisionAllPucks(double x, double y, double d);
+        
+        bool checkCollisionOnePuck(double x, double y, double d, unsigned p);
+        
+        bool checkCollisionOtherPucks(double x, double y, double d, unsigned p);
         
         double computeDistanceClosestBall();
         double computeDistanceTarget();
