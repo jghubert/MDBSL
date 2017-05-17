@@ -281,7 +281,7 @@ namespace MDB_Social {
         do {
         x = drand48() * (w*0.94 - 2*puckRadius)+puckRadius*1.1;
         y = drand48() * (w*0.94 - 2*puckRadius)+puckRadius*1.1;
-        } while (checkCollisionOtherPucks(x,y,puckRadius*2,p) ||  checkCollisionTarget(x,y,puckRadius*2));
+        } while (checkCollisionOtherPucks(x,y,puckRadius*2,p) ||  checkCollisionTarget(x,y,puckRadius*2) || checkCollisionRobot(x,y,puckRadius*2) );
         
         // relocate ball
         pucksList[p].x = x;
@@ -289,16 +289,32 @@ namespace MDB_Social {
         pucksList[p].visible = true;
                 
     }
+    
+    bool FastSim_Forage_Wall::checkCollisionRobot(double x, double y, double d)
+    {
+        bool collision = false;
+        double w = world->getMapWidth()/2.0;
         
+        //check collision target. NOTE: only works if target is in squared center
+        double dist = pow(x-w,2.0) + pow(y-w,2.0);
+        if (dist < pow(d/2.0+(diameterTarget/2.0),2.0)) {
+            collision = true;
+        }
+        
+        return collision;
+    }
+    
     
     bool FastSim_Forage_Wall::checkCollisionTarget(double x, double y, double d)
     {
         bool collision = false;
-        double w = world->getMapWidth()/2.0;
-            
-        //check collision target. NOTE: only works if target is in squared center
-        double dist = pow(x-w,2.0) + pow(y-w,2.0);
-        if (dist < pow(d/2.0+(diameterTarget/2.0),2.0)) {
+        double robotX = world->getRobot()->get_pos().get_x();
+        double robotY = world->getRobot()->get_pos().get_y();
+        double robotRadius = world->getRobot()->get_radius();
+        
+        //check collision robot
+        double dist = pow(x-robotX,2.0) + pow(y-robotY,2.0);
+        if (dist < pow((d/2.0)+robotRadius,2.0)) {
             collision = true;
         }
                         
