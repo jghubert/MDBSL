@@ -348,10 +348,10 @@ namespace MDB_Social {
     }
                 
 
-    bool FastSim_Forage_Wall::computeReward()
+    bool FastSim_Forage_Wall::computeReward(bool carrying)
     {
         // Compute the distance between the goal and the robot, and compute the reward accordingly.
-        return computeDistanceTarget() <= rewardZoneDiameter*0.5;
+        return carrying && computeDistanceTarget() <= rewardZoneDiameter*0.5;
     }
 
     double FastSim_Forage_Wall::computeDistanceToPuck(unsigned p)
@@ -445,7 +445,8 @@ namespace MDB_Social {
         std::cout.flush();
         
 //        std::vector<double> lightSensors;
-        compass_info_t compass;
+        compass_info_t compassToTarget;
+        compass_info_t compassToClosestPuck;
         std::vector<double> laserSensors;
         std::vector<double> nninputs(nbinputs);
         std::vector<double> nnoutput(nboutputs);
@@ -482,16 +483,9 @@ namespace MDB_Social {
         
         bool useValueFunction = !recommendBabbling && !useOnlyTrueReward;
         bool useBabbling = useOnlyBabbling || this->recommendBabbling;
-        unsigned onRewardZoneCounter;
-        bool enoughTimeOnReward = false;
         double lreward;
         unsigned epoch;
         unsigned index;
-        
-        double closest;
-        double fartest;
-        double distFitness = 0.0;
-        double dist;
         
         if (showFastSimViewer) {
             if (!world->activateViewer(true))
@@ -500,7 +494,8 @@ namespace MDB_Social {
                 std::cout << "FastSim_Forage_Wall: Viewer activated." << std::endl;
             }
         }
-        
+
+        double robotDiameter = world->getRobot()->get_radius() * 2.0;
         for (unsigned trial = 0; trial < trialCount; ++trial) {
             controller->reset();
             relocateRobot();
@@ -518,24 +513,30 @@ namespace MDB_Social {
                 fartest = closest;
             }
             
-            onRewardZoneCounter = 0;
-            enoughTimeOnReward = false;
             lreward = 0.0;
-            for (epoch = 0; epoch < epochCount && !enoughTimeOnReward; ++epoch) {
-//                world->getLightSensors(lightSensors);   // Should be only one sensor
-                reward = computeReward();
-                if (reward > 1e-6)
-                    onRewardZoneCounter++;
-                else
-                    onRewardZoneCounter = 0;
-                enoughTimeOnReward = endTrialWhenOnReward && onRewardZoneCounter >= maxTimeOnReward;
+            int puckCarried = -1;
+            for (epoch = 0; epoch < epochCount; ++epoch) {
+                double robotX = world->getRobot()->get_pos().get_x();
+                double robotY = world->getRobot()->get_pos().get_y();
+
+                //                world->getLightSensors(lightSensors);   // Should be only one sensor
+                reward = computeReward(puckCarried != -1);
 
                 world->getLaserSensors(laserSensors);
-                compass = computeCompass();
+                compassToTarget = computeCompassTarget();
+                compassToClosestPuck = computeCompassClosestPuck();
+                if (puckCarried != -1) {
+                    puckCarried = checkCollisionAllPucks(robotX, robotY, robotDiameter);
+                    if (puckCarried != -1)
+                        pucksList[puckCarried].visible = false;
+                }
                 
                 index = 0;
-                nninputs[index++] = compass.orientation;
-                nninputs[index++] = compass.distance;
+                nninputs[index++] = compassToTarget.orientation;
+                nninputs[index++] = compassToTarget.distance;
+                nninputs[index++] = compassToClosestPuck.orientation;
+                nninputs[index++] = compassToClosestPuck.distance;
+                nninputs[index++] = (puckCarried != -1);
                 std::copy(laserSensors.begin(), laserSensors.end(), nninputs.begin()+index);
 
                 //                nninputs[nbinputs-1] = 1.0;   // bias
@@ -555,12 +556,15 @@ namespace MDB_Social {
                 world->updateRobot(timestep*(nnoutput[0]*2*maxSpeed-maxSpeed), timestep*(nnoutput[1]*2*maxSpeed-maxSpeed));
                 world->step();
 
+                if (reward) {
+                    pucksList[carryingPuck].visible = true;
+                    relocateBall(carryingPuck);
+                }
+                
 #ifdef USE_REV
                 if (showREV) {
-                    double x = world->getRobot()->get_pos().get_x();
-                    double y = world->getRobot()->get_pos().get_y();
                     double orient = world->getRobot()->get_pos().theta();
-                    rev->setRobotPosition(x, y, orient);
+                    rev->setRobotPosition(robotX, robotY, orient);
                     rev->step();
                     revinit->updateEventQueue();
                 }
@@ -572,18 +576,6 @@ namespace MDB_Social {
                         sensorLogFile << nninputs[i] << " ";
                     sensorLogFile << nnoutput[0] << " " << nnoutput[1] << std::endl;
                 }
-                
-                if (fitnessComparisonTest) {
-                    dist = computeDistance();
-
-                    if (dist > fartest) {
-                        closest = dist;
-                        fartest = dist;
-                    }
-                    else if (dist < closest)
-                        closest = dist;
-                }
-                
                 
                 // I need to record the trace in the traceMemory
                 trace.true_reward = reward;
@@ -613,9 +605,6 @@ namespace MDB_Social {
             }
             rewardTotal += lreward / epoch;
             
-            if (fitnessComparisonTest)
-                distFitness += (fartest-closest)/fartest; //+ (1.0*epoch) / epochCount;
-
         }
 
 //        std::cout << "Phototaxis: rewardTotal = " << rewardTotal << " ; fitness = " << (rewardTotal*1.0)/(1.0*trialCount*epochCount) << std::endl;

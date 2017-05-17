@@ -107,7 +107,7 @@ namespace MDB_Social {
         
         void relocateBall(unsigned p);
 
-        bool computeReward();
+        bool computeReward(bool);
         
         bool checkCollisionTarget(double x, double y, double d);
         
@@ -127,7 +127,7 @@ namespace MDB_Social {
         
         //J: change?
         compass_info_t computeCompassTarget();
-        compass_info_t computeCompassClosestBall();
+        compass_info_t computeCompassClosestPuck();
         
         void testCompass();
         
