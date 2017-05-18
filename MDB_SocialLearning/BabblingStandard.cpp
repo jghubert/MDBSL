@@ -110,21 +110,21 @@ namespace MDB_Social {
     {
         double coeff = 0.0;
         
-        unsigned ntl = noveltyTraceLength > traceMemory->size() ? traceMemory->size() : noveltyTraceLength;
-
-        Trace B;
-        B.inputs = inputs;
-        B.outputs = outputs;
-        Trace A;
-        
-        TraceMemory::const_reverse_iterator it = traceMemory->rend();
-        unsigned k=0;
-        for (; k<ntl && it != traceMemory->rend(); ++k) {
-            A = *it;
-            coeff += pow(getTracesDistance(*it, B) , noveltyCoefficientExponent);
-            it++;
-        }
-        coeff /= (1.0*k);
+//        unsigned ntl = noveltyTraceLength > traceMemory->size() ? traceMemory->size() : noveltyTraceLength;
+//
+//        Trace B;
+//        B.inputs = inputs;
+//        B.outputs = outputs;
+//        Trace A;
+//        
+//        TraceMemory::const_reverse_iterator it = traceMemory->rbegin();
+//        unsigned k=0;
+//        for (; k<ntl && it != traceMemory->rend(); ++k) {
+//            A = *it;
+//            coeff += pow(getTracesDistance(*it, B) , noveltyCoefficientExponent);
+//            it++;
+//        }
+//        coeff /= (1.0*k);
         
         return coeff;
     }    
