@@ -164,6 +164,7 @@ namespace MDB_Social {
     void FastSim_Diversity_Compass::postProcessIndividual(Genotype& individual) {
 
     	if (useBabbling()) {
+
 			// Compute average distance to all other BehaviourDescriptions for the individual's behaviour
 			// and set that as fitness;
 
