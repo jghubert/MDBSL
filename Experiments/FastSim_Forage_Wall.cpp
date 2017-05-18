@@ -116,7 +116,7 @@ namespace MDB_Social {
         settings->registerParameter<unsigned>("experiment.REVsizeMultiplicator", 2, "Increase the default size of the REV viewer by this factor");
         settings->registerParameter<bool>("experiment.realtime", false, "Play the experiment in realtime in the viewer.");
         settings->registerParameter<unsigned>("experiment.framerate", 25, "Framerate used to display the experiment in the viewer.");
-//        settings->registerParameter<bool>("experiment.compassTest", false, "Test the compass output by rotating the robot at different location and printing the readings.");
+        settings->registerParameter<bool>("experiment.compassTest", false, "Test the compass output by rotating the robot at different location and printing the readings.");
 //        settings->registerParameter<bool>("experiment.fitnessComparisonTest", false, "Test the individual by using the learned and perfect fitness for comparison purposes.");
         settings->registerParameter<bool>("experiment.printInputsOutputs", false, "During testing, print the input and outputs of the neural network.");
         settings->registerParameter<unsigned>("experiment.numberBalls", 1, "Number of balls in arena");
@@ -159,7 +159,7 @@ namespace MDB_Social {
             REVsizeMultiplicator = settings->value<unsigned>("experiment.REVsizeMultiplicator").second;
             realtime = settings->value<bool>("experiment.realtime").second;
             framerate = settings->value<unsigned>("experiment.framerate").second;
-//            compassTest = settings->value<bool>("experiment.compassTest").second;
+            compassTest = settings->value<bool>("experiment.compassTest").second;
 //            fitnessComparisonTest = settings->value<bool>("experiment.fitnessComparisonTest").second;
             printInputsOutputs = settings->value<bool>("experiment.printInputsOutputs").second;
             numberBalls = settings->value<unsigned>("experiment.numberBalls").second;
@@ -479,10 +479,10 @@ namespace MDB_Social {
 //            return -1.0;
 //        }
 //        
-//        if (compassTest) {
-//            testCompass();
-//            return -1.0;
-//        }
+        if (compassTest) {
+            testCompass();
+            return -1.0;
+        }
         
         std::string cwd = resourceLibrary->getWorkingDirectory();
         
@@ -540,6 +540,8 @@ namespace MDB_Social {
             }
         }
 
+        double maxDistance = sqrt(2.0*pow(world->getMapWidth(),2.0));
+        
         double robotDiameter = world->getRobot()->get_radius() * 2.0;
         for (unsigned trial = 0; trial < trialCount; ++trial) {
             controller->reset();
@@ -580,10 +582,10 @@ namespace MDB_Social {
                 }
                 
                 index = 0;
-                nninputs[index++] = compassToTarget.orientation;
-                nninputs[index++] = compassToTarget.distance;
-                nninputs[index++] = compassToClosestPuck.orientation;
-                nninputs[index++] = compassToClosestPuck.distance;
+                nninputs[index++] = compassToTarget.orientation / M_PI;
+                nninputs[index++] = compassToTarget.distance / maxDistance;
+                nninputs[index++] = compassToClosestPuck.orientation / M_PI;
+                nninputs[index++] = compassToClosestPuck.distance / maxDistance;
                 nninputs[index++] = (puckCarried != -1);
                 std::copy(laserSensors.begin(), laserSensors.end(), nninputs.begin()+index);
 
@@ -751,63 +753,75 @@ namespace MDB_Social {
 //        outfile.close();
 //    }
 //
-//    void FastSim_Forage_Wall::testCompass()
-//    {
-//
-//        // Need to put the robot 
-//
-//        boost::shared_ptr<fastsim::Map> map = world->getMap();
-//        std::vector<fastsim::Map::ill_sw_t> lights = map->get_illuminated_switches();
-//        double gx = lights[0]->get_x();
-//        double gy = lights[0]->get_y();
-//
-//        double x;
-//        double y;
-//        double orient;
-//
-//        std::string labels[4] = {"TOP", "RIGHT", "BOTTOM", "LEFT"};
-//        const double delta = M_PI / 36.0;
-//        compass_info_t compass;
-//                
-//        for (unsigned p=0; p<4; ++p) {
-//            std::cout << "**** Testing position " << labels[p] << std::endl;
-//            switch (p) {
-//                case 0:  // TOP
-//                    x = gx;
-//                    y = gy/2.0;
-//                    break;
-//                case 1:  // RIGHT
-//                    x = gx * 1.5;
-//                    y = gy;
-//                    break;
-//                case 2: // BOTTOM
-//                    x = gx;
-//                    y = gy*1.5;
-//                    break;
-//                case 3: // LEFT
-//                    x = gx * 0.5;
-//                    y = gy;
-//                    break;
-//                default:
-//                    break;
-//            }
-//            orient = 0.0;
-//            world->getRobot()->reinit();
-//            world->moveRobot(x, y, orient);
-//            
-//            for (orient = 0.0; orient < 2.0*M_PI; orient += delta) {
-//                world->moveRobot(x, y, orient);
-//                world->updateRobot(0.0, 0.0);
-//                world->step();
-//                
-//                compass = computeCompass();
-//                std::cout << "    robot orient = " << orient << " ; compass orient = " << compass.orientation << " ; distance = " << compass.distance << std::endl;
-//            }
-//            std::cout << "---------------------------------------------------" << std::endl;
-//            
-//        }
-//        
-//    }
+    void FastSim_Forage_Wall::testCompass()
+    {
+
+        // Need to put the robot 
+
+        boost::shared_ptr<fastsim::Map> map = world->getMap();
+        double w = world->getMapWidth()/2.0;
+
+        double x;
+        double y;
+        double orient;
+
+        std::string labels[4] = {"TOP LEFT", "TOP RIGHT", "BOTTOM RIGHT", "BOTTOM LEFT"};
+        const double delta = M_PI / 36.0;
+        compass_info_t compassTarget;
+        compass_info_t compassPuck;
+        
+                
+        if (pucksList.size() != 1) {
+            std::cerr << "CompassTest: The number of pucks should be set to 1." << std::endl;
+            exit(1);
+        }
+            
+        // Move the puck in a specific place
+        pucksList[0].x = w;
+        pucksList[0].y = w*2.0 - 100.0;
+        pucksList[0].visible = true;
+        
+        for (unsigned p=0; p<4; ++p) {
+            std::cout << "**** Testing position " << labels[p] << std::endl;
+            switch (p) {
+                case 0:  // TOP LEFT
+                    x = 100.0;
+                    y = w * 2.0 - 100.0;
+                    break;
+                case 1:  // TOP RIGHT
+                    x = w * 2.0 - 100.0;
+                    y = w * 2.0 - 100.0;
+                    break;
+                case 2: // BOTTOM RIGHT
+                    x = w * 2.0 - 100.0;
+                    y = 100.0;
+                    break;
+                case 3: // BOTTOM LEFT
+                    x = 100.0;
+                    y = 100.0;
+                    break;
+                default:
+                    break;
+            }
+            orient = 0.0;
+            world->getRobot()->reinit();
+            world->moveRobot(x, y, orient);
+            
+            for (orient = 0.0; orient < 2.0*M_PI; orient += delta) {
+                world->moveRobot(x, y, orient);
+                world->updateRobot(0.0, 0.0);
+                world->step();
+                
+                compassTarget = computeCompassTarget();
+                compassPuck = computeCompassClosestPuck();
+                std::cout << "    robot: orient = " << orient << " ; compass2Target orient = " << compassTarget.orientation << " ; distance2Target = " << compassTarget.distance <<
+                        "; compass2Puck orient = " << compassPuck.orientation << " ; distance2Puck = " << compassPuck.distance<< std::endl;
+            }
+            std::cout << "---------------------------------------------------" << std::endl;
+            
+        }
+        
+    }
 
     
 }
