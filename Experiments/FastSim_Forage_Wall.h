@@ -82,7 +82,7 @@ namespace MDB_Social {
         double diameterPuck;
     
 
-//        bool compassTest;
+        bool compassTest;
 //        bool valueFunctionTest;
 //        bool fitnessComparisonTest;
         
@@ -135,7 +135,7 @@ namespace MDB_Social {
         compass_info_t computeCompassTarget();
         compass_info_t computeCompassClosestPuck();
         
-//        void testCompass();
+        void testCompass();
         
     public:
         FastSim_Forage_Wall(std::string id="Default");
