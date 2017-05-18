@@ -383,7 +383,7 @@ namespace MDB_Social {
     bool FastSim_Forage_Wall::computeReward(bool carrying)
     {
         // Compute the distance between the goal and the robot, and compute the reward accordingly.
-        return carrying && computeDistanceTarget() <= rewardZoneDiameter*0.5;
+        return carrying && computeDistanceTarget() <= (rewardZoneDiameter - diameterTarget)*0.5;
     }
 
     double FastSim_Forage_Wall::computeDistanceToPuck(unsigned p)
@@ -567,7 +567,7 @@ namespace MDB_Social {
                 world->getLaserSensors(laserSensors);
                 compassToTarget = computeCompassTarget();
                 compassToClosestPuck = computeCompassClosestPuck();
-                if (puckCarried != -1) {
+                if (puckCarried == -1) {
                     puckCarried = checkCollisionAllPucks(robotX, robotY, robotDiameter);
                     if (puckCarried != -1) {
                         pucksList[puckCarried].visible = false;
@@ -604,9 +604,10 @@ namespace MDB_Social {
                 world->updateRobot(timestep*(nnoutput[0]*2*maxSpeed-maxSpeed), timestep*(nnoutput[1]*2*maxSpeed-maxSpeed));
                 world->step();
 
-                if (reward)
+                if (reward) {
                     relocateBall(puckCarried);
-                
+                    puckCarried = -1;
+                }
 #ifdef USE_REV
                 if (showREV) {
                     double orient = world->getRobot()->get_pos().theta();
@@ -649,7 +650,7 @@ namespace MDB_Social {
             if (testIndividual) {
                 std::cout << "Trial " << trial << " : total reward = " << lreward << " for " << epoch << " timesteps" << std::endl;
             }
-            rewardTotal += lreward / epoch;
+            rewardTotal += lreward;
             
         }
 
