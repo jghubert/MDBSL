@@ -83,7 +83,7 @@ namespace MDB_Social {
     
 
         bool compassTest;
-//        bool valueFunctionTest;
+        bool valueFunctionTest;
 //        bool fitnessComparisonTest;
         
         unsigned trialCount;
@@ -129,7 +129,7 @@ namespace MDB_Social {
         
         void logRobotPosition(unsigned trial, unsigned epoch);
         
-//        void testValueFunction();
+        void testValueFunction();
         
         //J: change?
         compass_info_t computeCompassTarget();
