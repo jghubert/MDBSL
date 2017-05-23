@@ -52,7 +52,6 @@ namespace MDB_Social {
         double controllerMinimumWeight;
         double controllerMaximumWeight;
         std::vector<unsigned> layers;
-        bool useOnlyBabbling;
         bool useOnlyTrueReward;
         bool useOnlyRewardedStates;
         bool useRestrictedVFasFitness;
@@ -99,13 +98,18 @@ namespace MDB_Social {
         
         compass_info_t computeCompass();
         void testCompass();
+    protected:
+
+        bool useOnlyBabbling; // TODO: move babbling decision to GAFitness class?
+
+        bool useBabbling() const { return useOnlyBabbling || this->recommendBabbling;}
         
     public:
         FastSim_Phototaxis_Compass(std::string id="Default");
         FastSim_Phototaxis_Compass(const FastSim_Phototaxis_Compass& orig);
         virtual ~FastSim_Phototaxis_Compass();
 
-        double evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual=false) override;
+        virtual double evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual=false) override;
 
         void loadParameters() override;
         
