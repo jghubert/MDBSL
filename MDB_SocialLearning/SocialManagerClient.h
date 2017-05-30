@@ -47,6 +47,7 @@ namespace MDB_Social {
         void setupIPConnection(const char* _IP, unsigned _port);
         
         std::vector<std::string> getRobotIDs() const;
+        std::string getRandomRobotID(std::string excludeID="") const;
         TraceMemory* getTraceMemory(std::string robotid);
         PolicyMemory* getPolicyMemory(std::string robotid);
         ValueFunctionMemory* getValueFunctionMemory(std::string robotid);

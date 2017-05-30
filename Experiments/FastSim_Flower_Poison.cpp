@@ -38,6 +38,8 @@ namespace MDB_Social {
         nboutputs = 2;
         hiddenNeurons = 5;
         
+        attractionTest = false;
+        
 //        compassTest = false;
 //        fitnessComparisonTest = false;
         
@@ -148,6 +150,7 @@ namespace MDB_Social {
 //        settings->registerParameter<unsigned>("experiment.nbPoisonPerType", 1, "Number of poison sources for each type.");
         settings->registerParameter<std::string>("experiment.nbFlowerTypes", std::string(""), "Types and number of flowers per type. Ex: 3 0 2");
         settings->registerParameter<std::string>("experiment.nbPoisonTypes", std::string(""), "Types and number of poisons per type. Ex: 3 0 2");
+        settings->registerParameter<bool>("experiment.attractionTest", false, "Run attraction/repulsion test");
         
         std::cout << " DONE" << std::endl;
         
@@ -198,6 +201,7 @@ namespace MDB_Social {
 //            nbPoisonPerType = settings->value<unsigned>("experiment.nbPoisonPerType").second;
             stFlowerTypes = settings->value<std::string>("experiment.nbFlowerTypes").second;
             stPoisonTypes = settings->value<std::string>("experiment.nbPoisonTypes").second;
+            attractionTest = settings->value<bool>("experiment.attractionTest").second;
             
             babbling->loadParameters("experiment");
             world->initialize();
@@ -737,6 +741,11 @@ namespace MDB_Social {
             return -1.0;
         }
         
+        if (attractionTest) {
+            runAttractionTest();
+            return -1.0;
+        }
+        
 //        if (compassTest) {
 //            testCompass();
 //            return -1.0;
@@ -1064,6 +1073,90 @@ namespace MDB_Social {
         outfile.close();
     }
 
+    void FastSim_Flower_Poison::runAttractionTest()
+    {
+        std::cout << "*** Running attraction test ***" << std::endl;
+        
+        unsigned epoch;
+        
+        // Setup environment
+        int flowerType = -1;
+        int poisonType = -1;
+
+        if ( (*std::max_element(nbFlowerTypes.begin(),nbFlowerTypes.end()) > 1) || (*std::max_element(nbPoisonTypes.begin(),nbPoisonTypes.end()) > 1) ) {
+            std::cerr << "FastSim_FLower_Poison::runAttractionTest -> Error: The number of flowers and poison should be set to 1." << std::endl;
+            exit(1);
+        }
+        
+        bool measureFlower = false;
+        bool measurePoison = false;
+        
+        unsigned nbenv = nbPoisonType + nbFlowerType + nbPoisonType*nbFlowerType;
+        double w = world->getMapWidth();
+        
+        for (unsigned env = 0; env < nbenv; ++i) {
+            std::for_each(flowerList.begin(), flowerList.end(), [](std::vector<FoodPoisonObject>& a) {a[0].visible=false; a[0].x = w*0.5; a[0].y = w*0.75;});  // flower on TOP
+            std::for_each(poisonList.begin(), poisonList.end(), [](std::vector<FoodPoisonObject>& a) {a[0].visible=false; a[0].x = w*0.5; a[0].y = w*0.25;});  // poison BELOW
+
+            flowerType++;
+            if (flowerType >= nbFlowerType) {
+                flowerType = -1;
+                poisonType++;
+            }
+                        
+            measureFlower = (flowerType != -1);
+            measurePoison = (poisonType != -1);
+            
+            if (measureFlower && measurePoison) {  // Two food sources
+                flowerList[flowerType][0].visible = true;
+                poisonList[poisonType][0].visible = true;
+            }
+            else {    // One food source
+                if (measureFlower)  // only flower
+                    flowerList[flowerType][0].visible = true;
+                else    // Only poison
+                    poisonList[poisonType][0].visible = true;
+            }
+            
+            for (unsigned trial = 0; trial < trialCount; ++trial) {
+                controller->reset();
+                
+                // Put the robot back in the center of the arena with a random orientation
+                world->getRobot()->reinit();
+                world->moveRobot(w/2.0, w/2.0, drand48() * M_2_PI);
+                
+                for (epoch = 0; epoch < epochCount; ++epoch) {
+                    world->getLaserSensors(laserSensors);
+    //                compassToTarget = computeCompassTarget();
+
+                    index = 0;
+                    for (unsigned f=0; f<nbFlowerType; ++f) {
+                        compassToClosestFlower = computeCompassClosestFlower(f);
+                        nninputs[index++] = compassToClosestFlower.orientation / M_PI;
+                        nninputs[index++] = compassToClosestFlower.distance / maxDistance;
+                    }
+
+                    for (unsigned p=0; p<nbPoisonType; ++p) {
+                        compassToClosestPoison = computeCompassClosestPoison(p);
+                        nninputs[index++] = compassToClosestPoison.orientation / M_PI;
+                        nninputs[index++] = compassToClosestPoison.distance / maxDistance;
+                    }
+
+                    std::copy(laserSensors.begin(), laserSensors.end(), nninputs.begin()+index);
+
+                    controller->run(nninputs, nnoutput);
+
+                    world->updateRobot(timestep*(nnoutput[0]*2*maxSpeed-maxSpeed), timestep*(nnoutput[1]*2*maxSpeed-maxSpeed));
+                    world->step();
+
+                }
+
+                // Measure distances to objects
+            }
+        }
+    }
+    
+    
 //    void FastSim_Flower_Poison::testCompass()
 //    {
 //

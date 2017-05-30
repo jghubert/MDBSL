@@ -22,6 +22,7 @@
 #include "../MDB_SocialLearning/SimulatorLibrary.hpp"
 #include "../MDB_SocialLearning/ModelLibrary.hpp"
 #include "../MDB_SocialLearning/BabblingStandard.h"
+#include <boost/uuid/uuid.hpp>
 
 namespace MDB_Social {
 

@@ -80,7 +80,7 @@ namespace MDB_Social {
 	};
 
     struct Divider{
-		double rhs;
+        double rhs;
 
     	Divider(double rhs_) : rhs(rhs_) {}
     	double operator()(double lhs) const {return lhs / rhs;}
@@ -103,17 +103,17 @@ namespace MDB_Social {
     	bool oldUseOnlyBabbling(false);
     	std::swap(oldUseOnlyBabbling, useOnlyBabbling);
     	
-		// log start of trace for this individual
-		TraceMemory* tm = resourceLibrary->getTraceMemory();
-		size_t traceOffset = tm->size();
+        // log start of trace for this individual
+        TraceMemory* tm = resourceLibrary->getTraceMemory();
+        size_t traceOffset = tm->size();    // Won't work if the memory is full and new inputs erase older.
 
-		double fitness = Base::evaluateFitness(individual, gen, ind, _testIndividual);
+        double fitness = Base::evaluateFitness(individual, gen, ind, _testIndividual);
 
-		// restore babbling mode
-		recommendBabbling = oldReccomendBabbling;
-		useOnlyBabbling = oldUseOnlyBabbling;
+        // restore babbling mode
+        recommendBabbling = oldReccomendBabbling;
+        useOnlyBabbling = oldUseOnlyBabbling;
 
-		TraceMemory::iterator startOfEvaluation = tm->begin() + traceOffset;
+        TraceMemory::iterator startOfEvaluation = tm->begin() + traceOffset;
 
         if (useBabbling()) {
 			// Store trace info for postprocessing and calculating diversity; we use average activation level for now
@@ -145,16 +145,19 @@ namespace MDB_Social {
     struct DistanceTo {
     	DistanceTo(const FastSim_Diversity_Compass::BehaviourDescription& behaviour_) :
     		behaviour(behaviour_)
-    	{ }
+    	{
+        }
+        
     	double operator()(const FastSim_Diversity_Compass::BehaviourDescription &rhs) const {
     		// TODO: implement speedy distance calc suggested by Julien
-    		std::vector<double>	tmp;
+    		std::vector<double> tmp;
     		tmp.reserve(behaviour.size());
 
     		std::transform (behaviour.begin(), behaviour.end(), rhs.begin(), std::back_inserter(tmp),
     		    	[](double element1, double element2) {return pow((element1-element2),2);});
 
-    		return  sqrt(std::accumulate(tmp.begin(), tmp.end(), 0));    	}
+    		return  sqrt(std::accumulate(tmp.begin(), tmp.end(), 0));
+    	}
 
     private:
     	const FastSim_Diversity_Compass::BehaviourDescription& behaviour;

@@ -134,6 +134,7 @@ namespace MDB_Social {
         return robotIDs;
     }
 
+
     TraceMemory* SocialManager::getTraceMemory(std::string robotid)
     {
         auto it = robots.find(robotid);

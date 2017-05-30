@@ -194,8 +194,8 @@ namespace MDB_Social {
                     for (it = tm->begin(); it != tm->end(); ++it) {
                         for (size_t i = 0; i<it->inputs.size(); ++i)
                             inputs.push_back(it->inputs[i]);
-                        for (size_t i = 0; i<it->outputs.size(); ++i)
-                            inputs.push_back(outputs[i]);
+//                        for (size_t i = 0; i<it->outputs.size(); ++i)
+//                            inputs.push_back(outputs[i]);
                         outputs.push_back(it->expected_reward);
                     }
                     nn->setTrainingSet(tm->size(), inputs, outputs);

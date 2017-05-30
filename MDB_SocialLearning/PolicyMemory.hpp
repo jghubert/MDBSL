@@ -25,6 +25,8 @@ namespace MDB_Social {
         public:
             PolicyMemory() {}
             ~PolicyMemory() {}
+            
+            
         
     };
 
