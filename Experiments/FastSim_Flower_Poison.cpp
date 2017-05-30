@@ -1078,6 +1078,11 @@ namespace MDB_Social {
         std::cout << "*** Running attraction test ***" << std::endl;
         
         unsigned epoch;
+        std::vector<double> laserSensors;
+        std::vector<double> nninputs(nbinputs);
+        std::vector<double> nnoutput(nboutputs);
+        compass_info_t compassToClosestFlower;
+        compass_info_t compassToClosestPoison;
         
         // Setup environment
         int flowerType = -1;
@@ -1088,15 +1093,23 @@ namespace MDB_Social {
             exit(1);
         }
         
+        std::ofstream outfile("attractionTest.log", std::ios_base::trunc);
+        if (!outfile.is_open()) {
+            std::cerr << "FastSim_Flower_Poison::runAttractionTest: ERROR: Impossible to open the file attractionTest.log" << std::endl;
+            exit(1);
+        }
+        
         bool measureFlower = false;
         bool measurePoison = false;
         
         unsigned nbenv = nbPoisonType + nbFlowerType + nbPoisonType*nbFlowerType;
         double w = world->getMapWidth();
+        double maxDistance = sqrt(2.0*pow(w,2.0));
         
-        for (unsigned env = 0; env < nbenv; ++i) {
-            std::for_each(flowerList.begin(), flowerList.end(), [](std::vector<FoodPoisonObject>& a) {a[0].visible=false; a[0].x = w*0.5; a[0].y = w*0.75;});  // flower on TOP
-            std::for_each(poisonList.begin(), poisonList.end(), [](std::vector<FoodPoisonObject>& a) {a[0].visible=false; a[0].x = w*0.5; a[0].y = w*0.25;});  // poison BELOW
+        unsigned index;
+        for (unsigned env = 0; env < nbenv; ++env) {
+            std::for_each(flowerList.begin(), flowerList.end(), [w](std::vector<FoodPoisonObject>& a) {a[0].visible=false; a[0].x = w*0.5; a[0].y = w*0.75;});  // flower on TOP
+            std::for_each(poisonList.begin(), poisonList.end(), [w](std::vector<FoodPoisonObject>& a) {a[0].visible=false; a[0].x = w*0.5; a[0].y = w*0.25;});  // poison BELOW
 
             flowerType++;
             if (flowerType >= nbFlowerType) {
@@ -1118,12 +1131,24 @@ namespace MDB_Social {
                     poisonList[poisonType][0].visible = true;
             }
             
+            double distDeltaPoison = 0.0;
+            double distDeltaFlower = 0.0;
             for (unsigned trial = 0; trial < trialCount; ++trial) {
                 controller->reset();
                 
                 // Put the robot back in the center of the arena with a random orientation
                 world->getRobot()->reinit();
                 world->moveRobot(w/2.0, w/2.0, drand48() * M_2_PI);
+                
+                double distBeginPoison;
+                double distBeginFlower;
+                double distEndPoison;
+                double distEndFlower;
+                
+                if (measureFlower)
+                    distBeginFlower = sqrt(pow(flowerList[flowerType][0].x - w/2.0, 2.0) + pow(flowerList[flowerType][0].y - w/2.0, 2.0));
+                if (measurePoison)
+                    distBeginPoison = sqrt(pow(poisonList[flowerType][0].x - w/2.0, 2.0) + pow(poisonList[flowerType][0].y - w/2.0, 2.0));
                 
                 for (epoch = 0; epoch < epochCount; ++epoch) {
                     world->getLaserSensors(laserSensors);
@@ -1152,8 +1177,37 @@ namespace MDB_Social {
                 }
 
                 // Measure distances to objects
+                if (measureFlower) {
+                    distEndFlower = sqrt(pow(flowerList[flowerType][0].x - w/2.0, 2.0) + pow(flowerList[flowerType][0].y - w/2.0, 2.0));
+                    distDeltaFlower += distEndFlower - distBeginFlower;
+                }
+                if (measurePoison) {
+                    distEndPoison = sqrt(pow(poisonList[flowerType][0].x - w/2.0, 2.0) + pow(poisonList[flowerType][0].y - w/2.0, 2.0));
+                    distDeltaPoison += distEndPoison - distBeginPoison;
+                }
             }
+            // Compute the average of the distance for this environment
+            // We take out the types for poison and flower
+            outfile << nbFlowerType << " " << nbPoisonType << " ";
+            for (unsigned i = 0; i<nbFlowerType; ++i)
+                outfile << flowerList[i][0].visible << " ";
+            for (unsigned i = 0; i<nbPoisonType; ++i)
+                outfile << poisonList[i][0].visible << " ";
+            
+            if (measureFlower) {
+                distDeltaFlower /= (trialCount*1.0);
+                outfile << distDeltaFlower;
+            }
+            else
+                outfile << 0.0;
+            if (measurePoison) {
+                distDeltaPoison /= (trialCount*1.0);
+                outfile << distDeltaPoison;
+            }
+            else
+                outfile << 0.0;
         }
+        outfile.close();
     }
     
     
