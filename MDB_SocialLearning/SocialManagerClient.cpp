@@ -17,6 +17,7 @@
 #include "PolicyMemory.hpp"
 #include "TraceMemory.h"
 #include <iostream>
+#include <cstdlib>
 
 namespace MDB_Social {
 
@@ -133,4 +134,19 @@ namespace MDB_Social {
             sm->synchronise();
         }
     }
+    
+    
+    std::string SocialManagerClient::getRandomRobotID(std::string excludeID) const
+    {
+        std::vector<std::string> robotIds = this->getRobotIDs();
+        // We choose one random robot
+        unsigned other_robot = lrand48() % robotIds.size();
+        if (!excludeID.empty()) {
+            while (robotIds[other_robot] == excludeID);
+                other_robot = lrand48() % robotIds.size();
+        }
+        return robotIds[other_robot];
+    }
+    
+    
 }

@@ -16,6 +16,9 @@
 #include <valarray>
 #include <vector>
 #include <string>
+#include <boost/uuid/uuid.hpp>            // uuid class
+#include <boost/uuid/uuid_generators.hpp> // generators
+#include <boost/uuid/uuid_io.hpp>         // streaming operators etc.
 #include "Memory.hpp"
 #include "Settings.h"
 #include "RobotID.h"
@@ -24,18 +27,25 @@ namespace MDB_Social {
 
     
     class Genotype {
+    private:
+    	const boost::uuids::uuid id;
+
     protected:
         std::valarray<double> genes;
         double fitness;
         
     public:
-        Genotype() {fitness = 0.0;};
+        Genotype() :
+        	id(boost::uuids::random_generator()())
+    		{fitness = 0.0;};
         virtual ~Genotype() {};
         
         virtual size_t getSize() const {return genes.size();};
         virtual double operator[] (unsigned index) {return genes[index];};
         virtual void setFitness(double _fit) {fitness = _fit;}
         virtual double getFitness() const {return fitness;}
+
+        const boost::uuids::uuid& getID() const {return id;}
         
         Genotype& operator= (std::vector<double>& V);
         Genotype& operator= (Genotype& G);
@@ -80,11 +90,16 @@ namespace MDB_Social {
         GAFitness(std::string id="Default") : RobotID(id) {recommendBabbling = false;}
         virtual ~GAFitness() {}
 
-        virtual void preprocessing() {};    // Called before testing the current generation
+        virtual void preprocessing() {};    // Called before testing the current generation (SL specific, apparently)
         virtual void postprocessing() {};   // Called after testing the current generation
         
         virtual double evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool testing=false)=0;
-        
+
+        /// Called immediately before starting evaluations of the current generation
+        virtual void prepareEvaluation(void) {};
+        /// Any postprocessing after all individuals have been evaluated, but before sorting the population
+        virtual void postProcessIndividual(Genotype& individual) {};
+
         virtual void loadParameters()=0;
         
         virtual void setBabblingRecommendation(bool b) {

@@ -127,14 +127,9 @@ namespace MDB_Social {
         if (smclient) {  // test if we are in a social environment
             
             smclient->synchronise();
-            std::vector<std::string> robotIds = smclient->getRobotIDs();
-            // We choose one random robot
-            unsigned other_robot;
-            do
-                other_robot = lrand48() % robotIds.size();
-            while (robotIds[other_robot] == getID());
+            std::string other_robot = smclient->getRandomRobotID(getID());
             // Retrieve its genotypes
-            PolicyMemory* pm = smclient->getPolicyMemory(robotIds[other_robot]);
+            PolicyMemory* pm = smclient->getPolicyMemory(other_robot);
             // Find the best policy and replace the worst current one
             unsigned best = 0;
             double bestFitness = (*pm)[best].getFitness();

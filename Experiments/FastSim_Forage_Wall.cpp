@@ -105,7 +105,7 @@ namespace MDB_Social {
         settings->registerParameter<bool>("experiment.logRobotPosition", false, "Output the position of the robot in a log file.");
         settings->registerParameter<bool>("experiment.sensorLogFlag", false, "Log the sensors values during the experiment.");
         settings->registerParameter<double>("experiment.maxSpeed", 5, "Maximum speed of the robot.");
-//        settings->registerParameter<bool>("experiment.valueFunctionTest", false, "Produce a map of the environment in terms of potential reward from the VF.");
+        settings->registerParameter<bool>("experiment.valueFunctionTest", false, "Produce a map of the environment in terms of potential reward from the VF.");
         settings->registerParameter<bool>("experiment.useOnlyRewardedStates", false, "Keep only rewarded states in the traces to train the value function.");
         settings->registerParameter<bool>("experiment.useRestrictedVFasFitness", false, "Use VF as fitness only when the current trace has been encountered before.");
         settings->registerParameter<double>("experiment.thresholdForVFasFitness", 0.5, "Minimum distance between a trace and the traces in memory to use VF as fitness.");
@@ -148,7 +148,7 @@ namespace MDB_Social {
             maxSpeed = settings->value<double>("experiment.maxSpeed").second;
 //            testIndividual = settings->value<bool>("General.testIndividual").second;
             useOnlyTrueReward = settings->value<bool>("experiment.useOnlyTrueReward").second;
-//            valueFunctionTest = settings->value<bool>("experiment.valueFunctionTest").second;
+            valueFunctionTest = settings->value<bool>("experiment.valueFunctionTest").second;
             useOnlyRewardedStates = settings->value<bool>("experiment.useOnlyRewardedStates").second;
             useRestrictedVFasFitness = settings->value<bool>("experiment.useRestrictedVFasFitness").second;
             thresholdForVFasFitness = settings->value<double>("experiment.thresholdForVFasFitness").second;
@@ -474,11 +474,11 @@ namespace MDB_Social {
         
         testIndividual = _testIndividual;
         
-//        if (valueFunctionTest) {
-//            testValueFunction();
-//            return -1.0;
-//        }
-//        
+        if (valueFunctionTest) {
+            testValueFunction();
+            return -1.0;
+        }
+        
         if (compassTest) {
             testCompass();
             return -1.0;
@@ -667,92 +667,116 @@ namespace MDB_Social {
         return rewardTotal/(1.0*trialCount);
     }
 
-//    void FastSim_Forage_Wall::testValueFunction()
-//    {
-//        // This function tests the value function by placing the robot following a grid and measuring the response of the VF.
-//        // The robot will be tested with multiple orientations: one facing the light, one facing away from it.
-//
-//        std::cout << "Testing the value function:" ;
-//        std::cout.flush();
-//        
-//        double robotRadius = world->getRobot()->get_radius();
-//        double w = world->getMapWidth() - 1.1*robotRadius;
-//        double deltax = 1.0;
-//        double deltay = 1.0;
-//        double orient = 0.0;
-//
-//        compass_info_t compass;
-//        std::vector<double> laserSensors;
-//        std::vector<double> nninputs(nbinputs);
-//        std::vector<double> nnoutput(nboutputs);
-//        double estimated_reward;
-//        ValueFunction* vf = resourceLibrary->getValueFunction();
-//        vf->saveValueFunctionToFile("value_function.log");
-//
-//        boost::shared_ptr<fastsim::Map> map = world->getMap();
-//        std::vector<fastsim::Map::ill_sw_t> lights = map->get_illuminated_switches();
-//        double lightx = lights[0]->get_x();
-//        double lighty = lights[0]->get_y();
-//        
-//        Trace trace;
-//        trace.estimated_reward = 0.0;
-//        trace.expected_reward = 0.0;
-//        trace.reliability = 0.0;
-//        
-//        unsigned nbsteps = (unsigned)std::ceil((w * w) / (deltax * deltay));
-//        unsigned stepMark = nbsteps / 100;
-//        unsigned mark = 0;
-//        unsigned index;
-//        
-//        std::ofstream outfile("valueFunctionTest.log", std::ios_base::trunc);
-//        
-//        for (double x = robotRadius*1.1; x < w ; x+=deltax) {
-//            for (double y = robotRadius*1.1; y < w; y+=deltay) {
-//                
-//                if ( std::fmod(x*y,stepMark) == 0  ) {
-//                    std::cout << " " << mark++ << "%";
-//                    std::cout.flush();
-//                }
-//
-//                orient = atan2(lighty-y,lightx-x);   // Looking toward it
-//                for (unsigned o=0; o<2; ++o) {
-//
-//                    world->getRobot()->reinit();
-//                    world->moveRobot(x, y, orient);
-//
-//
-//                    world->getLaserSensors(laserSensors);
-//                    compass = computeCompass();
-//
-//                    index = 0;
-//                    nninputs[index++] = compass.orientation;
-//                    nninputs[index++] = compass.distance;
-//                    std::copy(laserSensors.begin(), laserSensors.end(), nninputs.begin()+index);
-////                    nninputs[nbinputs-1] = 1.0;   // bias
-//
-//
-//                    world->updateRobot(0.0, 0.0);
-//                    world->step();
-//
-//
-//                    // I need to record the trace in the traceMemory
-//                    trace.true_reward = 0.0;
-//                    trace.inputs = nninputs;
-//                    trace.outputs = nnoutput;
-//
-//                    estimated_reward = vf->estimateTrace(trace);
-//                    
-//                    outfile << x << " " << y << " " << orient << " " << o << " " << estimated_reward << std::endl;;
-//
-//                    orient += M_PI;   // Computing the opposite angle
-//                    if (orient > M_2_PI)
-//                        orient -= M_2_PI;
-//                }
-//            }
-//        }
-//        outfile.close();
-//    }
-//
+    void FastSim_Forage_Wall::testValueFunction()
+    {
+        // This function tests the value function by placing the robot following a grid and measuring the response of the VF.
+        // The robot will be tested with multiple orientations: one facing the light, one facing away from it.
+
+        std::cout << "Testing the value function:" ;
+        std::cout.flush();
+        
+        double robotRadius = world->getRobot()->get_radius();
+        double w = world->getMapWidth() - 1.1*robotRadius;
+        double deltax = 1.0;
+        double deltay = 1.0;
+        double orient = 0.0;
+
+        compass_info_t compassToTarget;
+        compass_info_t compassToClosestPuck;
+
+        if (pucksList.size() != 1) {
+            std::cerr << "Error: The number of pucks should be set to 1." << std::endl;
+            exit(1);
+        }
+        // Move the puck in a specific place
+        pucksList[0].x = world->getMapWidth()/2.0;
+        pucksList[0].y = w*2.0 - 100.0;
+        pucksList[0].visible = true;
+
+        std::vector<double> laserSensors;
+        std::vector<double> nninputs(nbinputs);
+        std::vector<double> nnoutput(nboutputs);
+        double estimated_reward;
+        ValueFunction* vf = resourceLibrary->getValueFunction();
+        vf->saveValueFunctionToFile("value_function.log");
+
+        boost::shared_ptr<fastsim::Map> map = world->getMap();
+        std::vector<fastsim::Map::ill_sw_t> lights = map->get_illuminated_switches();
+        double lightx = lights[0]->get_x();
+        double lighty = lights[0]->get_y();
+        
+        Trace trace;
+        trace.estimated_reward = 0.0;
+        trace.expected_reward = 0.0;
+        trace.reliability = 0.0;
+        
+        unsigned nbsteps = (unsigned)std::ceil((w * w) / (deltax * deltay));
+        unsigned stepMark = nbsteps / 100;
+        unsigned mark = 0;
+        unsigned index;
+        
+        std::ofstream outfile("valueFunctionTest.log", std::ios_base::trunc);
+        
+        double maxDistance = sqrt(2.0*pow(world->getMapWidth(),2.0));
+
+        for (double x = robotRadius*1.1; x < w ; x+=deltax) {
+            for (double y = robotRadius*1.1; y < w; y+=deltay) {
+                
+                if ( std::fmod(x*y,stepMark) == 0  ) {
+                    std::cout << " " << mark++ << "%";
+                    std::cout.flush();
+                }
+
+                bool collision = checkCollisionTarget(x,y,robotRadius*2.0) || checkCollisionOnePuck(x,y,robotRadius*2.0,0);
+                orient = atan2(lighty-y,lightx-x);   // Looking toward it
+                if (collision) {  // estimated_reward = -1
+                        outfile << x << " " << y << " " << orient << " 0 -1" << std::endl;;
+                        outfile << x << " " << y << " " << orient << " 1 -1" << std::endl;;
+                }
+                else {
+                    for (unsigned o=0; o<2; ++o) {
+
+                        world->getRobot()->reinit();
+                        world->moveRobot(x, y, orient);
+
+
+                        world->getLaserSensors(laserSensors);
+                        compassToTarget = computeCompassTarget();
+                        compassToClosestPuck = computeCompassClosestPuck();
+
+                        index = 0;
+                        nninputs[index++] = compassToTarget.orientation / M_PI;
+                        nninputs[index++] = compassToTarget.distance / maxDistance;
+                        nninputs[index++] = compassToClosestPuck.orientation / M_PI;
+                        nninputs[index++] = compassToClosestPuck.distance / maxDistance;
+                        nninputs[index++] = 0;  // carrying puck
+                        std::copy(laserSensors.begin(), laserSensors.end(), nninputs.begin()+index);
+    //                    nninputs[nbinputs-1] = 1.0;   // bias
+
+
+                        world->updateRobot(0.0, 0.0);
+                        world->step();
+
+
+                        // I need to record the trace in the traceMemory
+                        trace.true_reward = 0.0;
+                        trace.inputs = nninputs;
+                        trace.outputs = nnoutput;
+
+                        estimated_reward = vf->estimateTrace(trace);
+
+                        outfile << x << " " << y << " " << orient << " " << o << " " << estimated_reward << std::endl;;
+
+                        orient += M_PI;   // Computing the opposite angle
+                        if (orient > M_2_PI)
+                            orient -= M_2_PI;
+                    }
+                }
+            }
+        }
+        outfile.close();
+    }
+
     void FastSim_Forage_Wall::testCompass()
     {
 

@@ -358,14 +358,13 @@ namespace MDB_Social {
         trace.estimated_reward = 0.0;
         trace.expected_reward = 0.0;
         trace.reliability = 0.0;
-        
-        if (!useOnlyBabbling && !this->recommendBabbling)
+
+        if (!useBabbling())
             installGenotype(individual);
 
         double rewardTotal = 0.0;
         
         bool useValueFunction = !recommendBabbling && !useOnlyTrueReward;
-        bool useBabbling = useOnlyBabbling || this->recommendBabbling;
         unsigned onRewardZoneCounter;
         bool enoughTimeOnReward = false;
         double lreward;
@@ -431,7 +430,7 @@ namespace MDB_Social {
                 }
                 
                 
-                if (useBabbling) {
+                if (useBabbling()) {
                     nnoutput = babbling->run(nninputs);
                 }
                 else
