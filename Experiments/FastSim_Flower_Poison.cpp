@@ -128,6 +128,7 @@ namespace MDB_Social {
         settings->registerParameter<bool>("experiment.sensorLogFlag", false, "Log the sensors values during the experiment.");
         settings->registerParameter<double>("experiment.maxSpeed", 5, "Maximum speed of the robot.");
         settings->registerParameter<bool>("experiment.valueFunctionTest", false, "Produce a map of the environment in terms of potential reward from the VF.");
+        settings->registerParameter<unsigned>("experiment.valueFunctionTestNbOrientations", 10, "Number of orientations to test the value function on.");
         settings->registerParameter<bool>("experiment.useOnlyRewardedStates", false, "Keep only rewarded states in the traces to train the value function.");
         settings->registerParameter<bool>("experiment.useRestrictedVFasFitness", false, "Use VF as fitness only when the current trace has been encountered before.");
         settings->registerParameter<double>("experiment.thresholdForVFasFitness", 0.5, "Minimum distance between a trace and the traces in memory to use VF as fitness.");
@@ -202,6 +203,7 @@ namespace MDB_Social {
             stFlowerTypes = settings->value<std::string>("experiment.nbFlowerTypes").second;
             stPoisonTypes = settings->value<std::string>("experiment.nbPoisonTypes").second;
             attractionTest = settings->value<bool>("experiment.attractionTest").second;
+            valueFunctionTestNbOrientations = settings->value<unsigned>("experiment.valueFunctionTestNbOrientations").second;
             
             babbling->loadParameters("experiment");
             world->initialize();
@@ -742,6 +744,7 @@ namespace MDB_Social {
         }
         
         if (attractionTest) {
+            installGenotype(individual);
             runAttractionTest();
             return -1.0;
         }
@@ -940,7 +943,10 @@ namespace MDB_Social {
                 }
                 
 //                rewardTotal += std::max((double)reward, trace.estimated_reward);
-                lreward += std::max((double)reward, trace.estimated_reward);
+                if (useValueFunction)
+                    lreward += std::max((double)reward, trace.estimated_reward);
+                else
+                    lreward += (double)reward;
                 // need to compute the fitness now. Normally it should be the VF, but we don't have VF now...
             }
             if (testIndividual) {
@@ -992,6 +998,9 @@ namespace MDB_Social {
             exit(1);
         }
         // Move the puck in a specific place
+        double ww = world->getMapWidth();
+        std::for_each(flowerList.begin(), flowerList.end(), [ww](std::vector<FoodPoisonObject>& a) {a[0].visible=true; a[0].x = ww*0.5; a[0].y = ww*0.75;});  // flower on TOP
+        std::for_each(poisonList.begin(), poisonList.end(), [ww](std::vector<FoodPoisonObject>& a) {a[0].visible=true; a[0].x = ww*0.5; a[0].y = ww*0.25;});  // poison BELOW
         relocateFoodSources();
 
         std::vector<double> laserSensors;
@@ -999,12 +1008,12 @@ namespace MDB_Social {
         std::vector<double> nnoutput(nboutputs);
         double estimated_reward;
         ValueFunction* vf = resourceLibrary->getValueFunction();
-        vf->saveValueFunctionToFile("value_function.log");
+//        vf->saveValueFunctionToFile("value_function.log");
 
-        boost::shared_ptr<fastsim::Map> map = world->getMap();
-        std::vector<fastsim::Map::ill_sw_t> lights = map->get_illuminated_switches();
-        double lightx = lights[0]->get_x();
-        double lighty = lights[0]->get_y();
+//        boost::shared_ptr<fastsim::Map> map = world->getMap();
+//        std::vector<fastsim::Map::ill_sw_t> lights = map->get_illuminated_switches();
+//        double lightx = lights[0]->get_x();
+//        double lighty = lights[0]->get_y();
         
         Trace trace;
         trace.estimated_reward = 0.0;
@@ -1020,6 +1029,8 @@ namespace MDB_Social {
         
         double maxDistance = sqrt(2.0*pow(world->getMapWidth(),2.0));
 
+        double orientDelta = 2.0 * M_PI / valueFunctionTestNbOrientations;
+        
         for (double x = robotRadius*1.1; x < w ; x+=deltax) {
             for (double y = robotRadius*1.1; y < w; y+=deltay) {
                 
@@ -1029,14 +1040,16 @@ namespace MDB_Social {
                 }
 
                 bool collision = checkCollisionAllFoodSource(x,y,robotRadius*2.0).collision;
-                orient = atan2(lighty-y,lightx-x);   // Looking toward it
+//                orient = atan2(lighty-y,lightx-x);   // Looking toward it
                 if (collision) {  // estimated_reward = -1
-                        outfile << x << " " << y << " " << orient << " 0 -1" << std::endl;;
-                        outfile << x << " " << y << " " << orient << " 1 -1" << std::endl;;
+                    for (unsigned o=0; o<valueFunctionTestNbOrientations; ++o)
+                        outfile << valueFunctionTestNbOrientations << " " << x << " " << y << " " << o * orientDelta << " -1" << std::endl;
                 }
                 else {
-                    for (unsigned o=0; o<2; ++o) {
+                    for (unsigned o=0; o<valueFunctionTestNbOrientations; ++o) {
 
+                        orient = o * orientDelta;
+                        
                         world->getRobot()->reinit();
                         world->moveRobot(x, y, orient);
 
@@ -1044,10 +1057,17 @@ namespace MDB_Social {
                         compassToClosestPoison = computeCompassClosestPoison();
 
                         index = 0;
-                        nninputs[index++] = compassToClosestFlower.orientation / M_PI;
-                        nninputs[index++] = compassToClosestFlower.distance / maxDistance;
-                        nninputs[index++] = compassToClosestPoison.orientation / M_PI;
-                        nninputs[index++] = compassToClosestPoison.distance / maxDistance;
+                        for (unsigned f=0; f<nbFlowerType; ++f) {
+                            compassToClosestFlower = computeCompassClosestFlower(f);
+                            nninputs[index++] = compassToClosestFlower.orientation / M_PI;
+                            nninputs[index++] = compassToClosestFlower.distance / maxDistance;
+                        }
+
+                        for (unsigned p=0; p<nbPoisonType; ++p) {
+                            compassToClosestPoison = computeCompassClosestPoison(p);
+                            nninputs[index++] = compassToClosestPoison.orientation / M_PI;
+                            nninputs[index++] = compassToClosestPoison.distance / maxDistance;
+                        }
                         std::copy(laserSensors.begin(), laserSensors.end(), nninputs.begin()+index);
 
                         world->updateRobot(0.0, 0.0);
@@ -1061,11 +1081,11 @@ namespace MDB_Social {
 
                         estimated_reward = vf->estimateTrace(trace);
 
-                        outfile << x << " " << y << " " << orient << " " << o << " " << estimated_reward << std::endl;;
+                        outfile << valueFunctionTestNbOrientations << " " << x << " " << y << " " << orient << " " << estimated_reward << std::endl;;
 
-                        orient += M_PI;   // Computing the opposite angle
-                        if (orient > M_2_PI)
-                            orient -= M_2_PI;
+//                        orient += M_PI;   // Computing the opposite angle
+//                        if (orient > M_2_PI)
+//                            orient -= M_2_PI;
                     }
                 }
             }
@@ -1083,6 +1103,7 @@ namespace MDB_Social {
         std::vector<double> nnoutput(nboutputs);
         compass_info_t compassToClosestFlower;
         compass_info_t compassToClosestPoison;
+        double robotX, robotY;
         
         // Setup environment
         int flowerType = -1;
@@ -1131,6 +1152,19 @@ namespace MDB_Social {
                     poisonList[poisonType][0].visible = true;
             }
             
+            std::cout << "Testing environment:: Flower = ";
+            outfile << trialCount << " " << nbFlowerType << " " << nbPoisonType << " ";
+            for (unsigned i = 0; i<nbFlowerType; ++i) {
+                outfile << flowerList[i][0].visible << " ";
+                std::cout << flowerList[i][0].visible << " ";
+            }
+            std::cout << " ; Poison = ";
+            for (unsigned i = 0; i<nbPoisonType; ++i) {
+                outfile << poisonList[i][0].visible << " ";
+                std::cout << poisonList[i][0].visible << " ";                
+             }
+            std::cout << std::endl;
+
             double distDeltaPoison = 0.0;
             double distDeltaFlower = 0.0;
             for (unsigned trial = 0; trial < trialCount; ++trial) {
@@ -1148,7 +1182,7 @@ namespace MDB_Social {
                 if (measureFlower)
                     distBeginFlower = sqrt(pow(flowerList[flowerType][0].x - w/2.0, 2.0) + pow(flowerList[flowerType][0].y - w/2.0, 2.0));
                 if (measurePoison)
-                    distBeginPoison = sqrt(pow(poisonList[flowerType][0].x - w/2.0, 2.0) + pow(poisonList[flowerType][0].y - w/2.0, 2.0));
+                    distBeginPoison = sqrt(pow(poisonList[poisonType][0].x - w/2.0, 2.0) + pow(poisonList[poisonType][0].y - w/2.0, 2.0));
                 
                 for (epoch = 0; epoch < epochCount; ++epoch) {
                     world->getLaserSensors(laserSensors);
@@ -1176,36 +1210,42 @@ namespace MDB_Social {
 
                 }
 
+                robotX = world->getRobot()->get_pos().get_x();
+                robotY = world->getRobot()->get_pos().get_y();
+                
                 // Measure distances to objects
                 if (measureFlower) {
-                    distEndFlower = sqrt(pow(flowerList[flowerType][0].x - w/2.0, 2.0) + pow(flowerList[flowerType][0].y - w/2.0, 2.0));
-                    distDeltaFlower += distEndFlower - distBeginFlower;
+                    distEndFlower = sqrt(pow(flowerList[flowerType][0].x - robotX, 2.0) + pow(flowerList[flowerType][0].y - robotY, 2.0));
+                    distDeltaFlower = distEndFlower - distBeginFlower;
+                    outfile << distDeltaFlower << " ";
                 }
+                else
+                    outfile << 0.0 << " ";
+                
                 if (measurePoison) {
-                    distEndPoison = sqrt(pow(poisonList[flowerType][0].x - w/2.0, 2.0) + pow(poisonList[flowerType][0].y - w/2.0, 2.0));
-                    distDeltaPoison += distEndPoison - distBeginPoison;
+                    distEndPoison = sqrt(pow(poisonList[poisonType][0].x - robotX, 2.0) + pow(poisonList[poisonType][0].y - robotY, 2.0));
+                    distDeltaPoison = distEndPoison - distBeginPoison;
+                    outfile << distDeltaPoison << " ";
                 }
+                else
+                    outfile << 0.0 << " ";
             }
             // Compute the average of the distance for this environment
             // We take out the types for poison and flower
-            outfile << nbFlowerType << " " << nbPoisonType << " ";
-            for (unsigned i = 0; i<nbFlowerType; ++i)
-                outfile << flowerList[i][0].visible << " ";
-            for (unsigned i = 0; i<nbPoisonType; ++i)
-                outfile << poisonList[i][0].visible << " ";
-            
-            if (measureFlower) {
-                distDeltaFlower /= (trialCount*1.0);
-                outfile << distDeltaFlower;
-            }
-            else
-                outfile << 0.0;
-            if (measurePoison) {
-                distDeltaPoison /= (trialCount*1.0);
-                outfile << distDeltaPoison;
-            }
-            else
-                outfile << 0.0;
+             
+//            if (measureFlower) {
+//                distDeltaFlower;
+//                outfile << distDeltaFlower << " ";
+//            }
+//            else
+//                outfile << 0.0 << " ";
+//            if (measurePoison) {
+//                distDeltaPoison /= (trialCount*1.0);
+//                outfile << distDeltaPoison << " ";
+//            }
+//            else
+//                outfile << 0.0 << " ";
+            outfile << std::endl;
         }
         outfile.close();
     }

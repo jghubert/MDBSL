@@ -125,6 +125,7 @@ namespace MDB_Social {
 
         bool compassTest;
         bool valueFunctionTest;
+        unsigned valueFunctionTestNbOrientations;
         bool attractionTest;
 //        bool fitnessComparisonTest;
         
