@@ -16,6 +16,7 @@
 #include "RandomGenerators.h"
 #include <iostream>
 #include <errno.h>
+#include <cmath>
 #include <boost/filesystem.hpp>
 #include <unistd.h>
 #include "SocialManager.h"
@@ -283,22 +284,32 @@ namespace MDB_Social {
         traceMemory->trimMemory();
         
         double delta = 0.0;
-        double last_reward = 0.0;;
+        double last_reward = 0.0;
+        double initReward = 0.0;
         TraceMemory::reverse_iterator itend = traceMemory->rend();
+        boost::uuids::uuid currentUUID = traceMemory->rbegin()->uuid;
         for (TraceMemory::reverse_iterator it = traceMemory->rbegin(); it != itend; ++it ) {
-            if (it->true_reward > 1e-6) {
+            if (currentUUID == it->uuid) {
+                // We reset the counter because the tested genotype changed.
+                currentUUID = it->uuid;
+                last_reward = 0.0;
+            }
+            
+            if (it->true_reward > 1e-6 || it->true_reward < -1e-6) {
                 it->expected_reward = it->true_reward;
-                last_reward = it->true_reward;
+                last_reward = std::fabs(it->true_reward);
+                initReward = it->true_reward;
                 delta = last_reward / (RewardBackpropagationStepSize*1.0);
             }
-            else if (last_reward > 1e-6) {
+            else if (last_reward > 1e-6) {  // Problematic as the delta might jump from 1e-6 to -1e-6 and then it wouldn't stop.
                 last_reward -= delta;
                 if (last_reward < 1e-6)
                     last_reward = 0.0;
-                it->expected_reward = last_reward;
+                it->expected_reward = std::copysign(last_reward, initReward); // last_reward gets the sign of initReward
             }
             else
                 it->expected_reward = 0.0;
+                
         }
     }
     

@@ -16,6 +16,9 @@
 
 #include <vector>
 #include <fstream>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp> // generators
+#include <boost/uuid/uuid_io.hpp>
 #include "Memory.hpp"
 
 namespace MDB_Social {
@@ -43,6 +46,7 @@ namespace MDB_Social {
         double true_reward;      // Reward received in the task
         double reliability;
         bool usedForVFTraining;
+        boost::uuids::uuid uuid;
         
         double computeInputDistance(Trace& t, enum DistanceMeasure dm = EUCLIDIAN);
         
@@ -58,7 +62,9 @@ namespace MDB_Social {
             for (unsigned i=0; i<T.outputs.size(); ++i)
                 output << SEPARATOR << T.outputs[i];
             output << SEPARATOR << T.true_reward << SEPARATOR << T.expected_reward << SEPARATOR << T.estimated_reward << SEPARATOR << T.reliability
-                    << SEPARATOR << T.usedForVFTraining;
+                    << SEPARATOR << T.usedForVFTraining << SEPARATOR << T.uuid;
+            
+//            std::cout << "Trace::operator<< : uuid = " << T.uuid << std::endl;
             
             return output;
         }
@@ -110,18 +116,32 @@ namespace MDB_Social {
             
             input >> T.true_reward >> T.expected_reward >> T.estimated_reward >> T.reliability >> T.usedForVFTraining;
 
+            if (input.peek() != '\n')
+                input >> T.uuid;
+            else {
+                T.uuid = boost::uuids::nil_uuid();
+            }
+            
             return input;
         }
     };
     
     class TraceMemory: public Memory<Trace> {
     private:
-
+        boost::uuids::uuid defaultUUID;
+        
     public:
         TraceMemory();
         virtual ~TraceMemory();
 
         double computeShortestDistance(Trace& t, enum Trace::DistanceMeasure dm = Trace::DistanceMeasure::EUCLIDIAN);
+        
+        void setDefaultUUID(boost::uuids::uuid& _uuid);
+        void resetDefaultUUID();
+        
+        virtual void push_front(Trace& d) override;
+        virtual void push_back(Trace& d) override;
+        
         
     };
 }

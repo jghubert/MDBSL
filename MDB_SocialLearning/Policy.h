@@ -42,7 +42,7 @@ namespace MDB_Social {
 
         static void callbackParameters(void*);
         
-        void run();
+        bool run();
         
         void socialPreProcessing();
         void socialPostProcessing();
