@@ -51,6 +51,7 @@ namespace MDB_Social {
         bool socialMode;
         
         unsigned RewardBackpropagationStepSize;
+        unsigned RewardBackpropagationStepRepeatSize;
         
         // logging
         int loggingFrequency;

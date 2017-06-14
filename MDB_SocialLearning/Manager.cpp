@@ -116,6 +116,7 @@ namespace MDB_Social {
     {
 //        Settings* settings = Settings::getInstance();
         settings->registerParameter<unsigned>("Trace.RewardBackpropagationStepSize", 20, "Number of steps over which to propagate a received reward.");
+        settings->registerParameter<unsigned>("Trace.RewardBackpropagationStepRepeatSize", 1, "Number of repetitions of each step when propagating the reward.");
         
         settings->registerParameter<int>("Log.loggingFrequency", -1, "Number of updates between logging the memories. -1 logs only before exiting.");
         settings->registerParameter<bool>("Log.logValueFunction", false, "Activates the logging of the value functions");
@@ -141,6 +142,7 @@ namespace MDB_Social {
     {
 //        Settings* settings = Settings::getInstance();
         RewardBackpropagationStepSize = settings->value<unsigned>("Trace.RewardBackpropagationStepSize").second;
+        RewardBackpropagationStepRepeatSize = settings->value<unsigned>("Trace.RewardBackpropagationStepRepeatSize").second;
         
         loggingFrequency = settings->value<int>("Log.loggingFrequency").second;
         logValueFunction = settings->value<bool>("Log.logValueFunction").second;
@@ -286,13 +288,15 @@ namespace MDB_Social {
         double delta = 0.0;
         double last_reward = 0.0;
         double initReward = 0.0;
+        unsigned repeatCount = 1;
         TraceMemory::reverse_iterator itend = traceMemory->rend();
         boost::uuids::uuid currentUUID = traceMemory->rbegin()->uuid;
         for (TraceMemory::reverse_iterator it = traceMemory->rbegin(); it != itend; ++it ) {
-            if (currentUUID == it->uuid) {
+            if (currentUUID != it->uuid) {
                 // We reset the counter because the tested genotype changed.
                 currentUUID = it->uuid;
                 last_reward = 0.0;
+                repeatCount = 1;
             }
             
             if (it->true_reward > 1e-6 || it->true_reward < -1e-6) {
@@ -300,9 +304,15 @@ namespace MDB_Social {
                 last_reward = std::fabs(it->true_reward);
                 initReward = it->true_reward;
                 delta = last_reward / (RewardBackpropagationStepSize*1.0);
+                repeatCount = 1;
             }
             else if (last_reward > 1e-6) {  // Problematic as the delta might jump from 1e-6 to -1e-6 and then it wouldn't stop.
-                last_reward -= delta;
+                if (repeatCount == RewardBackpropagationStepRepeatSize) {
+                    last_reward -= delta;
+                    repeatCount = 1;
+                }
+                else
+                    repeatCount++;
                 if (last_reward < 1e-6)
                     last_reward = 0.0;
                 it->expected_reward = std::copysign(last_reward, initReward); // last_reward gets the sign of initReward
