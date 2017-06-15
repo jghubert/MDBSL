@@ -16,6 +16,7 @@
 
 #include <vector>
 #include <string>
+#include <boost/thread/barrier.hpp>
 
 namespace MDB_Social {
 
@@ -37,6 +38,10 @@ namespace MDB_Social {
         SocialManager* sm;
         std::string ip;
         unsigned port;
+        
+    protected:
+        boost::barrier* syncbarrier; 
+
 
     public:
         SocialManagerClient();

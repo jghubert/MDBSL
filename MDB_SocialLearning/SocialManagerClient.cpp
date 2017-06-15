@@ -27,6 +27,7 @@ namespace MDB_Social {
         sm = NULL;
         ip = "127.0.0.1";
         port = 0;
+        syncbarrier = NULL;
     }
 
     SocialManagerClient::SocialManagerClient(const SocialManagerClient& orig) {
@@ -39,6 +40,7 @@ namespace MDB_Social {
     {
         connectionType = connection_t::LOCAL;
         sm = smPtr;
+        syncbarrier = smPtr->getBarrier();
     }
     
     void SocialManagerClient::setupIPConnection(const char* _IP, unsigned _port)
@@ -130,8 +132,8 @@ namespace MDB_Social {
 
     void SocialManagerClient::synchronise()
     {
-        if (sm) {
-            sm->synchronise();
+        if (syncbarrier) {
+            syncbarrier->wait();
         }
     }
     
@@ -142,7 +144,7 @@ namespace MDB_Social {
         // We choose one random robot
         unsigned other_robot = lrand48() % robotIds.size();
         if (!excludeID.empty()) {
-            while (robotIds[other_robot] == excludeID);
+            while (robotIds[other_robot] == excludeID)
                 other_robot = lrand48() % robotIds.size();
         }
         return robotIds[other_robot];
