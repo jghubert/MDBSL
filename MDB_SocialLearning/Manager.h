@@ -52,6 +52,7 @@ namespace MDB_Social {
         
         unsigned RewardBackpropagationStepSize;
         unsigned RewardBackpropagationStepRepeatSize;
+        double RewardBackpropagationMinimumAbsoluteValue;
         
         // logging
         int loggingFrequency;

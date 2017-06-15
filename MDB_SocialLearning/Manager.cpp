@@ -117,6 +117,7 @@ namespace MDB_Social {
 //        Settings* settings = Settings::getInstance();
         settings->registerParameter<unsigned>("Trace.RewardBackpropagationStepSize", 20, "Number of steps over which to propagate a received reward.");
         settings->registerParameter<unsigned>("Trace.RewardBackpropagationStepRepeatSize", 1, "Number of repetitions of each step when propagating the reward.");
+        settings->registerParameter<double>("Trace.RewardBackpropagationMinimumAbsoluteValue", 0.1, "Minimum value for a reward to be backpropagated.");
         
         settings->registerParameter<int>("Log.loggingFrequency", -1, "Number of updates between logging the memories. -1 logs only before exiting.");
         settings->registerParameter<bool>("Log.logValueFunction", false, "Activates the logging of the value functions");
@@ -143,6 +144,7 @@ namespace MDB_Social {
 //        Settings* settings = Settings::getInstance();
         RewardBackpropagationStepSize = settings->value<unsigned>("Trace.RewardBackpropagationStepSize").second;
         RewardBackpropagationStepRepeatSize = settings->value<unsigned>("Trace.RewardBackpropagationStepRepeatSize").second;
+        RewardBackpropagationMinimumAbsoluteValue = settings->value<double>("Trace.RewardBackpropagationMinimumAbsoluteValue").second;
         
         loggingFrequency = settings->value<int>("Log.loggingFrequency").second;
         logValueFunction = settings->value<bool>("Log.logValueFunction").second;
@@ -299,7 +301,7 @@ namespace MDB_Social {
                 repeatCount = 1;
             }
             
-            if (it->true_reward > 1e-6 || it->true_reward < -1e-6) {
+            if (it->true_reward >= RewardBackpropagationMinimumAbsoluteValue || it->true_reward <= -RewardBackpropagationMinimumAbsoluteValue) {
                 it->expected_reward = it->true_reward;
                 last_reward = std::fabs(it->true_reward);
                 initReward = it->true_reward;

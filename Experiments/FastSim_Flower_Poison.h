@@ -95,7 +95,7 @@ namespace MDB_Social {
         
         unsigned nbinputs;
         unsigned nboutputs;
-        unsigned hiddenNeurons;
+        std::vector<unsigned> hiddenNeurons;
         double controllerMinimumWeight;
         double controllerMaximumWeight;
         std::vector<unsigned> layers;
@@ -121,6 +121,9 @@ namespace MDB_Social {
         unsigned nbPoisonType;
         std::vector<unsigned> nbPoisonTypes;
 //        unsigned nbPoisonPerType;
+        bool socialLearningControllers;
+        bool socialLearningValueFunctions;
+        bool socialLearningTraces;
     
 
         bool compassTest;
@@ -195,6 +198,8 @@ namespace MDB_Social {
         double evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual=false) override;
 
         void loadParameters() override;
+        
+        virtual void preprocessing() override;
         
     };
 
