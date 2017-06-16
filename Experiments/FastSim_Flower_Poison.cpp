@@ -12,6 +12,7 @@
  */
 
 #include "../MDB_SocialLearning/Settings.h"
+#include "../MDB_SocialLearning/SocialManagerClient.h"
 #include "FastSim_Flower_Poison.h"
 #include <cstdlib>
 #include <algorithm>
@@ -36,7 +37,7 @@ namespace MDB_Social {
         
         nbinputs = 1;
         nboutputs = 2;
-        hiddenNeurons = 5;
+//        hiddenNeurons = 5;
         
         attractionTest = false;
         
@@ -115,7 +116,7 @@ namespace MDB_Social {
 //        Settings* settings = Settings::getInstance();
         settings->registerParameter<unsigned>("experiment.nbinputs", 1, "Number of inputs/sensors on the neural network.");
         settings->registerParameter<unsigned>("experiment.nboutputs", 2, "Number of outputs on the neural network.");
-        settings->registerParameter<unsigned>("experiment.hiddenNeurons", 10, "Number of hidden neurons for the controller.");
+        settings->registerParameter<std::string>("experiment.hiddenNeurons", "10", "Number of hidden neurons for the controller.");
         settings->registerParameter<double>("experiment.controllerMinimumWeight", 0.0, "Minimum weight of the neural network.");
         settings->registerParameter<double>("experiment.controllerMaximumWeight", 0.0, "Maximum weight of the neural network.");
         settings->registerParameter<int>("experiment.trialCount", 0, "Number of trials for the experiment.");
@@ -152,6 +153,9 @@ namespace MDB_Social {
         settings->registerParameter<std::string>("experiment.nbFlowerTypes", std::string(""), "Types and number of flowers per type. Ex: 3 0 2");
         settings->registerParameter<std::string>("experiment.nbPoisonTypes", std::string(""), "Types and number of poisons per type. Ex: 3 0 2");
         settings->registerParameter<bool>("experiment.attractionTest", false, "Run attraction/repulsion test");
+        settings->registerParameter<bool>("experiment.socialLearningControllers", false, "Social Learning: exchange controllers.");
+        settings->registerParameter<bool>("experiment.socialLearningValueFunctions", false, "Social Learning: exchange value functions.");
+        settings->registerParameter<bool>("experiment.socialLearningTraces", false, "Social Learning: exchange traces.");
         
         std::cout << " DONE" << std::endl;
         
@@ -163,10 +167,11 @@ namespace MDB_Social {
 //        Settings* settings = Settings::getInstance();
         std::string stFlowerTypes;
         std::string stPoisonTypes;
+        std::string hiddenNeuronsStr;
         try {
             nbinputs = settings->value<unsigned>("experiment.nbinputs").second;
             nboutputs = settings->value<unsigned>("experiment.nboutputs").second;
-            hiddenNeurons = settings->value<unsigned>("experiment.hiddenNeurons").second;
+            hiddenNeuronsStr = settings->value<std::string>("experiment.hiddenNeurons").second;
             controllerMinimumWeight = settings->value<double>("experiment.controllerMinimumWeight").second;
             controllerMaximumWeight = settings->value<double>("experiment.controllerMaximumWeight").second;
             trialCount = settings->value<int>("experiment.trialCount").second;
@@ -204,6 +209,11 @@ namespace MDB_Social {
             stPoisonTypes = settings->value<std::string>("experiment.nbPoisonTypes").second;
             attractionTest = settings->value<bool>("experiment.attractionTest").second;
             valueFunctionTestNbOrientations = settings->value<unsigned>("experiment.valueFunctionTestNbOrientations").second;
+            socialLearningControllers = settings->value<bool>("experiment.socialLearningControllers").second;
+            socialLearningValueFunctions = settings->value<bool>("experiment.socialLearningValueFunctions").second;
+            socialLearningTraces = settings->value<bool>("experiment.socialLearningTraces").second;
+            
+            
             
             babbling->loadParameters("experiment");
             world->initialize();
@@ -237,17 +247,28 @@ namespace MDB_Social {
         // Initialize the controller
         controller = static_cast<FeedforwardNN*>(ModelLibrary::getModel("Feedforward", getID()));
         std::vector<enum FeedforwardNN::ActivationFunction> activationFunctions(1, FeedforwardNN::SIGMOID);
-        if (hiddenNeurons) {
-            layers.resize(3);
-            layers[0] = nbinputs;
-            layers[1] = hiddenNeurons;
-            layers[2] = nboutputs;
+        if ( !(stringToVector(hiddenNeuronsStr, hiddenNeurons) ) ) {
+            std::cerr << "FastSim_Flower_Poison : ERROR with hidden neuron description. A non numeral has been detected." << std::endl;
+            exit(1);
         }
-        else {
-            layers.resize(2);
-            layers[0] = nbinputs;
-            layers[1] = nboutputs;
-        }
+        layers.resize(2+hiddenNeurons.size());
+        unsigned index = 0;
+        layers[index++] = nbinputs;
+        for (unsigned i=0; i<hiddenNeurons.size(); ++i)
+            layers[index++] = hiddenNeurons[i];
+        layers[index] = nboutputs;
+        
+//        if (hiddenNeurons.) {
+//            layers.resize(3);
+//            layers[0] = nbinputs;
+//            layers[1] = hiddenNeurons;
+//            layers[2] = nboutputs;
+//        }
+//        else {
+//            layers.resize(2);
+//            layers[0] = nbinputs;
+//            layers[1] = nboutputs;
+//        }
         controller->setup(layers, activationFunctions);
                         
 
@@ -304,6 +325,58 @@ namespace MDB_Social {
         
     }
 
+    void FastSim_Flower_Poison::preprocessing() 
+    {
+        // Let's get the list of robots.
+        SocialManagerClient* smclient = resourceLibrary->getSocialManagerClient();
+//        SocialManagerClient* smclient = NULL;
+//            std::cout << " p " << std::endl;
+        if (smclient) {  // test if we are in a social environment
+
+            smclient->synchronise();
+
+            if (socialLearningControllers) {
+                std::string other_robot = smclient->getRandomRobotID(getID());
+                // Retrieve its genotypes
+                PolicyMemory* pm = smclient->getPolicyMemory(other_robot);
+                // Find the best policy and replace the worst current one
+                unsigned best = 0;
+                double bestFitness = (*pm)[best].getFitness();
+                for (unsigned i = 1; i < pm->size(); ++i) {
+                    if ((*pm)[i].getFitness() > bestFitness) {
+                        best = i;
+                        bestFitness = (*pm)[best].getFitness();
+                    }
+                }
+                // We have the best. We need to compare the fitness to the worst individual in our population
+                PolicyMemory* mypm = smclient->getPolicyMemory(getID());
+                unsigned worst = 0;
+                double worstFitness = (*mypm)[worst].getFitness();
+                for (unsigned i = 1; i < mypm->size(); ++i) {
+                    if ((*mypm)[i].getFitness() < worstFitness) {
+                        worst = i;
+                        worstFitness = (*mypm)[worst].getFitness();
+                    }
+                }
+                if (bestFitness > worstFitness) {
+    //                std::cout << " Social learning: copying " << robotIds[other_robot] << ":" << best << " to " << getID() << ":" << worst << std::endl;
+                    resourceLibrary->getGeneticAlgorithm()->importGenotype(&(*pm)[best], worst);
+                }
+            }
+            
+            if (socialLearningValueFunctions) {
+                std::cout << "FastSim_Flower_Poison: Social learning on value functions not yet implemented." << std::endl;
+                exit(1);
+            }
+            
+            if (socialLearningTraces) {
+                std::cout << "FastSim_Flower_Poison: Social learning on traces not yet implemented." << std::endl;
+                exit(1);
+            }
+            
+        }        
+    }
+    
     
     void FastSim_Flower_Poison::installGenotype(Genotype& individual)
     {
@@ -424,22 +497,6 @@ namespace MDB_Social {
         }                
     }
     
-    
-//    bool FastSim_Flower_Poison::checkCollisionTarget(double x, double y, double d)
-//    {
-//        bool collision = false;
-//        double w = world->getMapWidth()/2.0;
-//        
-//        //check collision target. NOTE: only works if target is in squared center
-//        double dist = pow(x-w,2.0) + pow(y-w,2.0);
-//        if (dist < pow(d/2.0+(diameterTarget/2.0),2.0)) {
-//            collision = true;
-//        }
-//        
-//        return collision;
-//    }
-    
-    
     bool FastSim_Flower_Poison::checkCollisionRobot(double x, double y, double d)
     {
         bool collision = false;
@@ -513,13 +570,6 @@ namespace MDB_Social {
         return (dist < pow(d/2.0+(p.d/2.0),2.0));
     }
                 
-
-//    bool FastSim_Flower_Poison::computeReward(bool carrying)
-//    {
-//        // Compute the distance between the goal and the robot, and compute the reward accordingly.
-//        return carrying && computeDistanceTarget() <= (rewardZoneDiameter - diameterTarget)*0.5;
-//    }
-
     double FastSim_Flower_Poison::computeDistanceToFoodSource(FoodPoisonObject& p)
     {
         double x = world->getRobot()->get_pos().get_x();
@@ -637,34 +687,6 @@ namespace MDB_Social {
         return ret;
     }
 
-    
-//    double FastSim_Flower_Poison::computeDistanceTarget()
-//    {
-//        double x = world->getRobot()->get_pos().get_x();
-//        double y = world->getRobot()->get_pos().get_y();
-//        double w = world->getMapWidth()/2.0;
-//        double robotRadius = world->getRobot()->get_radius();
-//
-//        return sqrt(pow(x-w,2.0) + pow(y-w,2.0)) - robotRadius - diameterTarget*0.5;
-//    }
-
-//    FastSim_Flower_Poison::compass_info_t FastSim_Flower_Poison::computeCompassTarget()
-//    {
-//        compass_info_t ret;
-//        double x = world->getRobot()->get_pos().get_x();
-//        double y = world->getRobot()->get_pos().get_y();
-//        double rorientation = world->getRobot()->get_pos().theta();
-//
-//        double w = world->getMapWidth()/2.0;
-//        ret.orientation = atan2((-y+w),(w-x)) - rorientation;
-//        if (ret.orientation < -M_PI)
-//            ret.orientation += 2*M_PI;
-//
-//        ret.distance = computeDistanceTarget();
-//        
-//        return ret;
-//    }
-    
     FastSim_Flower_Poison::compass_info_t FastSim_Flower_Poison::computeCompassClosestFlower(int rtype)
     {
         compass_info_t ret;

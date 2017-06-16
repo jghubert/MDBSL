@@ -10,6 +10,7 @@
 #include "Settings.h"
 #include "FitnessLibrary.hpp"
 #include "SimulatorLibrary.hpp"
+#include "TraceMemory.h"
 
 namespace MDB_Social {
 
@@ -138,5 +139,20 @@ namespace MDB_Social {
     {
         workingDirectory = std::string(cwd);
     }
+   
+    void GeneticAlgorithm::startRecordingTraces(Genotype* ind)
+    {
+        TraceMemory* tm = resourceLibrary->getTraceMemory();
+        if (tm)
+            tm->setDefaultUUID(ind->getID());
+    }
+    
+    void GeneticAlgorithm::stopRecordingTraces()
+    {
+        TraceMemory* tm = resourceLibrary->getTraceMemory();
+        if (tm)
+            tm->resetDefaultUUID();
+    }
+   
 }
 

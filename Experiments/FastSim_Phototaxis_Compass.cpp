@@ -478,7 +478,7 @@ namespace MDB_Social {
                 if (useValueFunction) {
 //                    if (!useRestrictedVFasFitness || (useRestrictedVFasFitness && tm->computeShortestDistance(trace, Trace::EUCLIDIAN2) >= tVFF))
                     double fam = -1.0;
-                    if (!useRestrictedVFasFitness || (useRestrictedVFasFitness && (fam=vf->computeFamiliarity(trace)) <= tVFF)) {
+                    if (!useRestrictedVFasFitness || (useRestrictedVFasFitness && (fam=vf->computeFamiliarity(trace)) <= tVFF)) { // familiarity is a distance, so the lower the better
                         trace.estimated_reward = vf->estimateTrace(trace);
 //                        std::cout << "trial:epoch " << trial << ":" << epoch << " -> familiarity = " << fam << std::endl;
                     }

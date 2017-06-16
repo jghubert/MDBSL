@@ -56,7 +56,8 @@ namespace MDB_Social {
         TraceMemory* getTraceMemory(std::string robotid);
         PolicyMemory* getPolicyMemory(std::string robotid);
         ValueFunctionMemory* getValueFunctionMemory(std::string robotid);
-        
+      
+        boost::barrier* getBarrier() const;
     };
 
 }

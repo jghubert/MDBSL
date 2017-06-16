@@ -213,8 +213,10 @@ namespace MDB_Social {
     {
         for (unsigned i=0; i<populationSize; ++i) {
             Genotype* g = static_cast<Genotype*>(population[i]);
+            startRecordingTraces(g);
             double fit = fitness->evaluateFitness(*g, currentGeneration, i, false);
             population[i]->setFitness(fit);
+            stopRecordingTraces();
 //            std::cout << "SimpleGeneticAlgorithm:: Fitness from population = " << population[i]->getFitness() << " ; fitness from evaluation = " << fit << std::endl;
         }
     }

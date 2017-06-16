@@ -84,13 +84,16 @@ namespace MDB_Social {
         inst->loadParameters();
     }
 
-    void Policy::run()
+    bool Policy::run()
     {
-        if (recommendBabbling)
+        if (recommendBabbling) {
             babbling->run();
+            return false;
+        }
         else {
             ga->setWorkingDirectory(resourceLibrary->getWorkingDirectory().c_str());
             ga->run();
+            return true;
         }
     }
     

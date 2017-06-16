@@ -115,6 +115,7 @@ namespace MDB_Social {
             robots[robotIDs[i]] = mg;
             mg->initializeLocalConnection(this);
             mg->setSocialMode(true);
+            
         }
         std::cout << Color::Modifier(Color::Code::FG_GREEN) << "Finished loading the robots" << Color::Modifier(Color::Code::FG_DEFAULT) << std::endl;
     }
@@ -170,6 +171,11 @@ namespace MDB_Social {
     void SocialManager::synchronise()
     {
         syncbarrier->wait();
+    }
+
+    boost::barrier* SocialManager::getBarrier() const
+    {
+        return syncbarrier;
     }
     
 }

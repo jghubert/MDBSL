@@ -16,6 +16,7 @@
 #include "RandomGenerators.h"
 #include <iostream>
 #include <errno.h>
+#include <cmath>
 #include <boost/filesystem.hpp>
 #include <unistd.h>
 #include "SocialManager.h"
@@ -115,6 +116,8 @@ namespace MDB_Social {
     {
 //        Settings* settings = Settings::getInstance();
         settings->registerParameter<unsigned>("Trace.RewardBackpropagationStepSize", 20, "Number of steps over which to propagate a received reward.");
+        settings->registerParameter<unsigned>("Trace.RewardBackpropagationStepRepeatSize", 1, "Number of repetitions of each step when propagating the reward.");
+        settings->registerParameter<double>("Trace.RewardBackpropagationMinimumAbsoluteValue", 0.1, "Minimum value for a reward to be backpropagated.");
         
         settings->registerParameter<int>("Log.loggingFrequency", -1, "Number of updates between logging the memories. -1 logs only before exiting.");
         settings->registerParameter<bool>("Log.logValueFunction", false, "Activates the logging of the value functions");
@@ -140,6 +143,8 @@ namespace MDB_Social {
     {
 //        Settings* settings = Settings::getInstance();
         RewardBackpropagationStepSize = settings->value<unsigned>("Trace.RewardBackpropagationStepSize").second;
+        RewardBackpropagationStepRepeatSize = settings->value<unsigned>("Trace.RewardBackpropagationStepRepeatSize").second;
+        RewardBackpropagationMinimumAbsoluteValue = settings->value<double>("Trace.RewardBackpropagationMinimumAbsoluteValue").second;
         
         loggingFrequency = settings->value<int>("Log.loggingFrequency").second;
         logValueFunction = settings->value<bool>("Log.logValueFunction").second;
@@ -283,22 +288,40 @@ namespace MDB_Social {
         traceMemory->trimMemory();
         
         double delta = 0.0;
-        double last_reward = 0.0;;
+        double last_reward = 0.0;
+        double initReward = 0.0;
+        unsigned repeatCount = 1;
         TraceMemory::reverse_iterator itend = traceMemory->rend();
+        boost::uuids::uuid currentUUID = traceMemory->rbegin()->uuid;
         for (TraceMemory::reverse_iterator it = traceMemory->rbegin(); it != itend; ++it ) {
-            if (it->true_reward > 1e-6) {
-                it->expected_reward = it->true_reward;
-                last_reward = it->true_reward;
-                delta = last_reward / (RewardBackpropagationStepSize*1.0);
+            if (currentUUID != it->uuid) {
+                // We reset the counter because the tested genotype changed.
+                currentUUID = it->uuid;
+                last_reward = 0.0;
+                repeatCount = 1;
             }
-            else if (last_reward > 1e-6) {
-                last_reward -= delta;
+            
+            if (it->true_reward >= RewardBackpropagationMinimumAbsoluteValue || it->true_reward <= -RewardBackpropagationMinimumAbsoluteValue) {
+                it->expected_reward = it->true_reward;
+                last_reward = std::fabs(it->true_reward);
+                initReward = it->true_reward;
+                delta = last_reward / (RewardBackpropagationStepSize*1.0);
+                repeatCount = 1;
+            }
+            else if (last_reward > 1e-6) {  // Problematic as the delta might jump from 1e-6 to -1e-6 and then it wouldn't stop.
+                if (repeatCount == RewardBackpropagationStepRepeatSize) {
+                    last_reward -= delta;
+                    repeatCount = 1;
+                }
+                else
+                    repeatCount++;
                 if (last_reward < 1e-6)
                     last_reward = 0.0;
-                it->expected_reward = last_reward;
+                it->expected_reward = std::copysign(last_reward, initReward); // last_reward gets the sign of initReward
             }
             else
                 it->expected_reward = 0.0;
+                
         }
     }
     

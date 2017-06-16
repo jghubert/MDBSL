@@ -24,11 +24,10 @@
 #include "RobotID.h"
 
 namespace MDB_Social {
-
     
     class Genotype {
     private:
-    	const boost::uuids::uuid id;
+    	boost::uuids::uuid id;
 
     protected:
         std::valarray<double> genes;
@@ -45,7 +44,7 @@ namespace MDB_Social {
         virtual void setFitness(double _fit) {fitness = _fit;}
         virtual double getFitness() const {return fitness;}
 
-        const boost::uuids::uuid& getID() const {return id;}
+        boost::uuids::uuid& getID() {return id;}
         
         Genotype& operator= (std::vector<double>& V);
         Genotype& operator= (Genotype& G);
@@ -54,6 +53,7 @@ namespace MDB_Social {
             output << G.fitness << SEPARATOR << G.genes.size();
             for (size_t i=0; i<G.genes.size(); ++i)
                 output << SEPARATOR << G.genes[i];
+            output << SEPARATOR << G.id;
             return output;
         }
         
@@ -74,6 +74,13 @@ namespace MDB_Social {
             while (index < G.genes.size() && input.good())
                 input >> G.genes[index++];
             
+            if (input.peek() != '\n')
+                input >> G.id;
+            else {
+                std::cerr << "Genotype:: WARNING: Loading older version of the genotype." << std::endl;
+                G.id = boost::uuids::nil_uuid();
+            }
+
             return input;
         }
         
@@ -144,6 +151,9 @@ namespace MDB_Social {
         virtual void importGenotype(Genotype* ind, int destination);
 
         virtual void setWorkingDirectory(const char* cwd);
+        
+        virtual void startRecordingTraces(Genotype* ind);
+        virtual void stopRecordingTraces();
     };
     
 }

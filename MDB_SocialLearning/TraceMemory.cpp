@@ -13,6 +13,7 @@
 
 #include "TraceMemory.h"
 #include <math.h>
+#include <boost/uuid/nil_generator.hpp>
 
 namespace MDB_Social {
 
@@ -25,6 +26,7 @@ namespace MDB_Social {
         estimated_reward = 0.0;
         reliability = 0.0;
         usedForVFTraining = false;
+        uuid = boost::uuids::nil_uuid();
     }
     
     Trace::Trace(const Trace& t)
@@ -36,6 +38,8 @@ namespace MDB_Social {
         this->expected_reward = t.expected_reward;
         this->estimated_reward = t.estimated_reward;
         this->reliability = t.reliability;
+        this->usedForVFTraining = t.usedForVFTraining;
+        this->uuid = t.uuid;
     }
     
     Trace::~Trace()
@@ -53,6 +57,7 @@ namespace MDB_Social {
         this->estimated_reward = t.estimated_reward;
         this->reliability = t.reliability;
         this->usedForVFTraining = t.usedForVFTraining;
+        this->uuid = t.uuid;
         
         return *this;
     }
@@ -117,6 +122,7 @@ namespace MDB_Social {
     
 /************************** TRACEMEMORY *******************************/
     TraceMemory::TraceMemory() {
+        defaultUUID = boost::uuids::nil_uuid();
     }
 
     TraceMemory::~TraceMemory() {
@@ -135,5 +141,29 @@ namespace MDB_Social {
         return best;
     }
 
+    void TraceMemory::setDefaultUUID(boost::uuids::uuid& _uuid)
+    {
+        defaultUUID = _uuid;
+    }
+    
+    void TraceMemory::resetDefaultUUID()
+    {
+        defaultUUID = boost::uuids::nil_uuid();
+    }
+    
+    void TraceMemory::push_front(Trace& d)
+    {
+        if (d.uuid.is_nil())
+            d.uuid = defaultUUID;
+        Memory<Trace>::push_front(d);
+    }
+    
+    void TraceMemory::push_back(Trace& d)
+    {
+        if (d.uuid.is_nil())
+            d.uuid = defaultUUID;
+        Memory<Trace>::push_back(d);
+    }
+    
     
 }
