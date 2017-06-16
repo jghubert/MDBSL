@@ -133,7 +133,7 @@ namespace MDB_Social {
         for (unsigned i=first; i<npoints+first; i+=2)
             std::copy(std::begin(g->genes)+cpoints[i], std::begin(g->genes)+cpoints[i+1], std::begin(this->genes)+cpoints[i]);
             
-        delete uig;
+//        delete uig;
     }
     
     

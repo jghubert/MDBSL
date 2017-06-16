@@ -71,7 +71,7 @@ GaussianGenerator::GaussianGenerator(double mean, double std):
 
 GaussianGenerator::~GaussianGenerator() 
 { 
-    if (!local && instance->refCount == 0)
+    if (!local && instance &&  instance->refCount == 0)
 	instance = NULL;
 }
 
@@ -121,7 +121,7 @@ UniformGenerator::UniformGenerator(double min, double max):
 
 UniformGenerator::~UniformGenerator() 
 { 
-    if (instance->refCount == 0)
+    if (instance && instance->refCount == 0)
 	instance = NULL;
 }
 
@@ -153,7 +153,10 @@ UniformIntegerGenerator::UniformIntegerGenerator()
 
 UniformIntegerGenerator::~UniformIntegerGenerator()
 {
-    if (instance->refCount == 0)
+//    std::cout << "UniformIntegerGenerator: instance" << std::endl;
+//    if (instance)
+//        std::cout << "             refCount = " << instance->refCount << std::endl;
+    if (instance && instance->refCount == 0)
         instance = NULL;
 }
    
