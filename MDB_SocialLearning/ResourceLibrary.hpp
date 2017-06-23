@@ -28,6 +28,9 @@ namespace MDB_Social {
     class GAFitness;
     class GeneticAlgorithm;
     class SocialManagerClient;
+    class UniformGenerator;
+    class UniformIntegerGenerator;
+    class GaussianGenerator;
 //    class PolicyMemory;
     
     class ResourceLibraryData
@@ -41,12 +44,17 @@ namespace MDB_Social {
         GAFitness* gafitness;
         GeneticAlgorithm* ga;
         SocialManagerClient* smclient;
+        UniformGenerator* ug;
+        UniformIntegerGenerator* uig;
+        GaussianGenerator* gg;
         
         bool socialMode;
         std::string workingDirectory;
         
+        std::string localID;
+        
     public:
-        ResourceLibraryData() {
+        ResourceLibraryData(std::string lid = "Default") {
             policy = NULL;
             vf = NULL;
             tm = NULL;
@@ -55,9 +63,14 @@ namespace MDB_Social {
             gafitness = NULL;
             ga = NULL;
             smclient = NULL;
+            ug = NULL;
+            uig = NULL;
+            gg = NULL;
             
             socialMode = false;
             workingDirectory = '.';
+            
+            localID = lid;
         }
         
         void setValueFunction(ValueFunction* _vf) {
@@ -140,6 +153,34 @@ namespace MDB_Social {
             return workingDirectory;
         }
         
+        std::string getLocalID() const {
+            return localID;
+        }
+        
+        void setUniformGenerator(UniformGenerator* _ug) {
+            ug = _ug;
+        }
+        
+        UniformGenerator* getUniformGenerator() const {
+            return ug;
+        }
+
+        void setUniformIntegerGenerator(UniformIntegerGenerator* _uig) {
+            uig = _uig;
+        }
+        
+        UniformIntegerGenerator* getUniformIntegerGenerator() const {
+            return uig;
+        }
+        
+        void setGaussianGenerator(GaussianGenerator* _gg) {
+            gg = _gg;
+        }
+        
+        GaussianGenerator* getGaussianGenerator() const {
+            return gg;
+        }
+        
     };
     
     class ResourceLibrary
@@ -180,7 +221,7 @@ namespace MDB_Social {
         static ResourceLibraryData* getInstance(std::string id="Default") {
             if (instance == NULL) {
                 instance = new ResourceLibrary();
-                ResourceLibraryData* tmp = new ResourceLibraryData();
+                ResourceLibraryData* tmp = new ResourceLibraryData(id);
                 instance->library.insert(std::make_pair(id, tmp));
             }
             
@@ -188,7 +229,7 @@ namespace MDB_Social {
             if (instance->library.count(id) > 0)
                 ret = instance->library[id];
             else {
-                ret = new ResourceLibraryData();
+                ret = new ResourceLibraryData(id);
                 instance->library.insert(std::make_pair(id, ret));
             }
             instance->refCount++;

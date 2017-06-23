@@ -13,6 +13,9 @@
 
 
 #include "AllOneExperiment.h"
+#include "../MDB_SocialLearning/ResourceLibrary.hpp"
+#include "../MDB_SocialLearning/SocialManagerClient.h"
+#include "RobotID.h"
 
 namespace MDB_Social {
 
@@ -31,6 +34,19 @@ namespace MDB_Social {
         
     }
 
+    void AllOneExperiment::preprocessing() 
+    {
+        // Let's get the list of robots.
+        ResourceLibraryData* resourceLibrary = RobotID::getResourceLibrary();
+        SocialManagerClient* smclient = resourceLibrary->getSocialManagerClient();
+//        SocialManagerClient* smclient = NULL;
+//            std::cout << " p " << std::endl;
+        if (smclient) {  // test if we are in a social environment
+
+            smclient->synchronise();
+            
+        }        
+    }
     
     double AllOneExperiment::evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual)
     {

@@ -58,7 +58,7 @@ namespace MDB_Social {
         void logRobotPosition(unsigned trial, unsigned epoch);
         
     public:
-        FastSim_MultiRobot_WallAvoidance(std::string id="Default");
+        FastSim_MultiRobot_WallAvoidance();
         virtual ~FastSim_MultiRobot_WallAvoidance();
 
         double evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual=false) override;

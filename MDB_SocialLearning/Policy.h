@@ -20,10 +20,14 @@
 #include <string>
 
 namespace MDB_Social {
+    class ResourceLibraryData;
+    class Settings;
 
-    class Policy: public RobotID {
+    class Policy {
     private:
         std::string geneticAlgorithmType;
+        Settings* settings;
+        ResourceLibraryData* resourceLibrary;
 
         GeneticAlgorithm* ga;
         BabblingPolicy* babbling;
@@ -53,7 +57,7 @@ namespace MDB_Social {
 
         void setBabblingRecommendation(bool b);
         
-        virtual void setID(std::string& _id) override;
+//        virtual void setID(std::string& _id) override;
 
         
     };

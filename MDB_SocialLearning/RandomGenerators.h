@@ -8,80 +8,88 @@
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/uniform_real.hpp>
 
-class RandomGenerator
-{
- protected:
-	long unsigned refCount;
+namespace MDB_Social {
 
-	RandomGenerator();
-	~RandomGenerator();
+    class RandomGenerator
+    {
+     protected:
+            long unsigned refCount;
 
- public:
+            RandomGenerator();
+            ~RandomGenerator();
 
-	void operator delete (void* p);
+     public:
 
-	long getSeed();
+            void operator delete (void* p);
 
-	static void InitializeRandomSeed();
-	
-};
+            long getSeed();
 
-class GaussianGenerator : public RandomGenerator
-{
- private:
-	boost::mt19937 gen;    // Mersenne Twister Generator
-	boost::normal_distribution<double> normal_dist;  //Normal distribution
-	boost::variate_generator<boost::mt19937&, boost::normal_distribution<double> > normal;  // everything together as one
+            static void InitializeRandomSeed();
 
-	GaussianGenerator(double mean = 0.0, double std = 1.0);
-        
-        bool local;
- public:
-	static GaussianGenerator* instance;
-        GaussianGenerator* localInstance;
-	~GaussianGenerator();
+    };
 
-	double operator()();
+    class GaussianGenerator : public RandomGenerator
+    {
+     private:
+            boost::mt19937 gen;    // Mersenne Twister Generator
+            boost::normal_distribution<double> normal_dist;  //Normal distribution
+            boost::variate_generator<boost::mt19937&, boost::normal_distribution<double> > normal;  // everything together as one
 
-        void setParameters(double _mean, double _std);
-        
-	static GaussianGenerator* getInstance();
-        static GaussianGenerator* getLocalInstance();
-};
+            GaussianGenerator(double mean = 0.0, double std = 1.0);
 
-class UniformGenerator : public RandomGenerator
-{
- private:
-	boost::mt19937 gen;    // Mersenne Twister Generator
-	boost::uniform_real<double> uniform_dist;  //Normal distribution
-	boost::variate_generator<boost::mt19937&, boost::uniform_real<double> > uniform;  // everything together as one
+            bool local;
+     public:
+            static GaussianGenerator* instance;
+            GaussianGenerator* localInstance;
+            ~GaussianGenerator();
 
-	UniformGenerator(double min = 0.0, double max = 1.0);
- public:
-	static UniformGenerator* instance;
-	~UniformGenerator();
+            double operator()();
 
-	double operator()();
+            void setParameters(double _mean, double _std);
 
-	static UniformGenerator* getInstance();
+            static GaussianGenerator* getInstance();
+            static GaussianGenerator* getLocalInstance();
+    };
 
-};
+    class UniformGenerator : public RandomGenerator
+    {
+     private:
+            boost::mt19937 gen;    // Mersenne Twister Generator
+            boost::uniform_real<double> uniform_dist;  //Normal distribution
+            boost::variate_generator<boost::mt19937&, boost::uniform_real<double> > uniform;  // everything together as one
 
-class UniformIntegerGenerator : public RandomGenerator
-{
-private:
-	boost::mt19937 gen;    // Mersenne Twister Generator
-    
-        UniformIntegerGenerator();
-public:
-        static UniformIntegerGenerator* instance;
-        ~UniformIntegerGenerator();
-    
-        unsigned operator()();
+            UniformGenerator(double min = 0.0, double max = 1.0);
 
-	static UniformIntegerGenerator* getInstance();
-    
-};
+            bool local;
+     public:
+            static UniformGenerator* instance;
+            ~UniformGenerator();
 
+            double operator()();
+
+            static UniformGenerator* getInstance();
+            static UniformGenerator* getLocalInstance();
+
+    };
+
+    class UniformIntegerGenerator : public RandomGenerator
+    {
+    private:
+            boost::mt19937 gen;    // Mersenne Twister Generator
+
+            bool local;
+
+            UniformIntegerGenerator();
+    public:
+            static UniformIntegerGenerator* instance;
+            ~UniformIntegerGenerator();
+
+            unsigned operator()();
+
+            static UniformIntegerGenerator* getInstance();
+            static UniformIntegerGenerator* getLocalInstance();
+
+    };
+}
 
 #endif

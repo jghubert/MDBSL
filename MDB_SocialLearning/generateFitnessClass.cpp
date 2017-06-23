@@ -72,20 +72,20 @@ int main(int argc, char** argv)
     outfile << "\t class FitnessLibrary {" << endl;
     outfile << "\t private:" << endl;
     for (auto it = fitnesses.begin(); it != fitnesses.end(); ++it) {
-        outfile << "\t\t static GAFitness* get" << *it << "(std::string id) {" << endl;
-        outfile << "\t\t\t return new " << *it << "(id);" << endl;
+        outfile << "\t\t static GAFitness* get" << *it << "() {" << endl;
+        outfile << "\t\t\t return new " << *it << "();" << endl;
         outfile << "\t\t}" << endl;
     }
     outfile << endl;
 
     auto it = fitnesses.begin();
     outfile << "\t public:" << endl;
-    outfile << "\t\t static GAFitness* getFitness(std::string fit, std::string id=\"Default\") {" << endl;
+    outfile << "\t\t static GAFitness* getFitness(std::string fit) {" << endl;
     outfile << "\t\t\t if (fit == \"" << *it << "\")" << endl;
-    outfile << "\t\t\t\t return get" << *it << "(id);" << endl;
+    outfile << "\t\t\t\t return get" << *it << "();" << endl;
     for (it++; it != fitnesses.end(); ++it) {
         outfile << "\t\t\t else if (fit == \"" << *it << "\")" << endl;
-        outfile << "\t\t\t\t return get" << *it << "(id);" << endl;
+        outfile << "\t\t\t\t return get" << *it << "();" << endl;
     }
     outfile << "\t\t\t else" << endl;
     outfile << "\t\t\t\t return NULL;" << endl;

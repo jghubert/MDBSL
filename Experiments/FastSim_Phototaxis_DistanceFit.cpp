@@ -24,8 +24,7 @@
 
 namespace MDB_Social {
 
-    FastSim_Phototaxis_DistanceFit::FastSim_Phototaxis_DistanceFit(std::string id) 
-    :GAFitness(id)
+    FastSim_Phototaxis_DistanceFit::FastSim_Phototaxis_DistanceFit() 
     {
         registerParameters();
         
@@ -77,7 +76,7 @@ namespace MDB_Social {
     {
         std::cout << "FastSim_Phototaxis_DistanceFit : registering the parameters...";
         std::cout.flush();
-//        Settings* settings = Settings::getInstance();
+        Settings* settings = RobotID::getSettings();
         settings->registerParameter<unsigned>("experiment.nbinputs", 1, "Number of inputs/sensors on the neural network.");
         settings->registerParameter<unsigned>("experiment.nboutputs", 2, "Number of outputs on the neural network.");
         settings->registerParameter<unsigned>("experiment.hiddenNeurons", 10, "Number of hidden neurons for the controller.");
@@ -98,7 +97,7 @@ namespace MDB_Social {
     void FastSim_Phototaxis_DistanceFit::loadParameters()
     {
         std::cout << "FastSim_Phototaxis_DistanceFit: Loading parameters..." << std::endl;
-//        Settings* settings = Settings::getInstance();
+        Settings* settings = RobotID::getSettings();
 
         try {
             nbinputs = settings->value<unsigned>("experiment.nbinputs").second;
@@ -229,7 +228,8 @@ namespace MDB_Social {
         std::vector<double> nninputs(nbinputs);
         std::vector<double> nnoutput(nboutputs);
         double dist;
-
+        
+        ResourceLibraryData* resourceLibrary = RobotID::getResourceLibrary();
         std::string cwd = resourceLibrary->getWorkingDirectory();
         
         std::cout << "* ";

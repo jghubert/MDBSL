@@ -18,17 +18,16 @@
 #include "../MDB_SocialLearning/ResourceLibrary.hpp"
 #include "../MDB_SocialLearning/SocialManagerClient.h"
 #include "../MDB_SocialLearning/PolicyMemory.hpp"
+#include "RobotID.h"
 
 namespace MDB_Social {
 
-    FastSim_MultiRobot_WallAvoidance::FastSim_MultiRobot_WallAvoidance(std::string id) 
+    FastSim_MultiRobot_WallAvoidance::FastSim_MultiRobot_WallAvoidance() 
     {
-        std::cout << "FastSim_MultiRobot_WallAvoidance = " << id << std::endl;
-        setID(id);
+        std::cout << "FastSim_MultiRobot_WallAvoidance = " << RobotID::getID() << std::endl;
         registerParameters();
         
         world = static_cast<FastSimSimulator*>(this->getSimulator("FastSim"));
-        world->setID(id);
         world->registerParameters();
 
         
@@ -55,7 +54,7 @@ namespace MDB_Social {
     {
         std::cout << "FastSim_Phototaxis : registering the parameters...";
         std::cout.flush();
-//        Settings* settings = Settings::getInstance();
+        Settings* settings = RobotID::getSettings();
         settings->registerParameter<unsigned>("experiment.nbinputs", 1, "Number of inputs/sensors on the neural network.");
         settings->registerParameter<unsigned>("experiment.nboutputs", 2, "Number of outputs on the neural network.");
         settings->registerParameter<unsigned>("experiment.hiddenNeurons", 10, "Number of hidden neurons for the controller.");
@@ -76,7 +75,7 @@ namespace MDB_Social {
     void FastSim_MultiRobot_WallAvoidance::loadParameters()
     {
         std::cout << "FastSim_Phototaxis: Loading parameters..." << std::endl;
-//        Settings* settings = Settings::getInstance();
+        Settings* settings = RobotID::getSettings();
         try {
             nbinputs = settings->value<unsigned>("experiment.nbinputs").second;
             nboutputs = settings->value<unsigned>("experiment.nboutputs").second;
@@ -121,13 +120,14 @@ namespace MDB_Social {
     void FastSim_MultiRobot_WallAvoidance::preprocessing() 
     {
         // Let's get the list of robots.
+        ResourceLibraryData* resourceLibrary = RobotID::getResourceLibrary();
         SocialManagerClient* smclient = resourceLibrary->getSocialManagerClient();
 //        SocialManagerClient* smclient = NULL;
 //            std::cout << " p " << std::endl;
         if (smclient) {  // test if we are in a social environment
             
             smclient->synchronise();
-            std::string other_robot = smclient->getRandomRobotID(getID());
+            std::string other_robot = smclient->getRandomRobotID(RobotID::getID());
             // Retrieve its genotypes
             PolicyMemory* pm = smclient->getPolicyMemory(other_robot);
             // Find the best policy and replace the worst current one
@@ -140,7 +140,7 @@ namespace MDB_Social {
                 }
             }
             // We have the best. We need to compare the fitness to the worst individual in our population
-            PolicyMemory* mypm = smclient->getPolicyMemory(getID());
+            PolicyMemory* mypm = smclient->getPolicyMemory(RobotID::getID());
             unsigned worst = 0;
             double worstFitness = (*mypm)[worst].getFitness();
             for (unsigned i = 1; i < mypm->size(); ++i) {

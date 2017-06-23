@@ -71,7 +71,7 @@ namespace MDB_Social {
         void logRobotPosition(unsigned trial, unsigned epoch);
         
     public:
-        FastSim_Phototaxis_DistanceFit(std::string id="Default");
+        FastSim_Phototaxis_DistanceFit();
         FastSim_Phototaxis_DistanceFit(const FastSim_Phototaxis_DistanceFit& orig);
         virtual ~FastSim_Phototaxis_DistanceFit();
 

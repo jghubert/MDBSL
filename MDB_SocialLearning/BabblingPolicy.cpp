@@ -14,11 +14,12 @@
 #include "BabblingPolicy.h"
 #include "ResourceLibrary.hpp"
 #include "Settings.h"
+#include "RobotID.h"
 
 namespace MDB_Social {
 
 
-    BabblingPolicy::BabblingPolicy() 
+    BabblingPolicy::BabblingPolicy()
     {
         fitness = NULL;
         trialCount = 1;
@@ -31,19 +32,19 @@ namespace MDB_Social {
 
     void BabblingPolicy::initialise()
     {
-        fitness = resourceLibrary->getGAFitness();
+        fitness = RobotID::getResourceLibrary()->getGAFitness();
         
     }
     
     void BabblingPolicy::registerParameters()
     {
-//        Settings* settings = Settings::getInstance();
+        Settings* settings = RobotID::getSettings();
         settings->registerParameter<unsigned>("Babbling.trialCount", 1, "Babbling: Number of trials per babbling session.");
     }
     
     void BabblingPolicy::loadParameters()
     {
-//        Settings* settings = Settings::getInstance();
+        Settings* settings = RobotID::getSettings();
         trialCount = settings->value<unsigned>("Babbling.trialCount").second;
     }
     

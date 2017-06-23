@@ -15,11 +15,10 @@
 #define BABBLINGPOLICY_H
 
 #include "GeneticAlgorithm.hpp"
-#include "RobotID.h"
 
 namespace MDB_Social {
 
-    class BabblingPolicy: public RobotID {
+    class BabblingPolicy {
     private:
         GAFitness* fitness;
         Genotype dummyGenotype;

@@ -14,25 +14,31 @@
 #ifndef MANAGER_H
 #define MANAGER_H
 
-#include "Settings.h"
 #include "ValueFunction.h"
 #include "ValueFunctionMemory.hpp"
 #include "Policy.h"
-#include "ResourceLibrary.hpp"
 #include "TraceMemory.h"
 #include "PolicyMemory.hpp"
-#include "RobotID.h"
 #include "SocialManagerClient.h"
+#include <thread>
 
 namespace MDB_Social {
 
     class SocialManager;
+    class Settings;
+    class ResourceLibraryData;
     
-    class Manager: public RobotID {
+    class Manager {
     private:
+        std::string localRobotID;
+        bool initialized;
+        std::string settingFile;
+        int argc;
+        char** argv;
+        std::string cwd;
         
-//        Settings* settings;
-//        ResourceLibrary* resourceLibrary;
+        Settings* settings;
+        ResourceLibraryData* resourceLibrary;
         
         // Value Function
         ValueFunction* vf;
@@ -82,7 +88,7 @@ namespace MDB_Social {
         bool changeWorkingDirectory(const char* dir);
         
     public:
-        Manager(const char* settingfile, int argc, char* argv[], std::string ID="Default");
+        Manager(const char* settingfile, int argc, char* argv[], std::string ID="Default", std::string _cwd=".");
         ~Manager();
 
         void reset();
@@ -95,6 +101,7 @@ namespace MDB_Social {
         void processTraceMemory();
         void processValueFunction();
 
+        void initializeManager();
         void registerParameters() const;
         void loadParameters();
         
@@ -109,9 +116,7 @@ namespace MDB_Social {
         bool getSocialMode() const;
         
         void log() const;
-        
-        virtual void setID(std::string& _id);
-        
+                
         void operator()();
         
     };

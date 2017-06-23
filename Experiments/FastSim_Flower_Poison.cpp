@@ -18,11 +18,11 @@
 #include <algorithm>
 #include "../MDB_SocialLearning/ResourceLibrary.hpp"
 #include "../MDB_SocialLearning/ValueFunction.h"
+#include "RobotID.h"
 
 namespace MDB_Social {
 
-    FastSim_Flower_Poison::FastSim_Flower_Poison(std::string id)
-    :GAFitness(id)
+    FastSim_Flower_Poison::FastSim_Flower_Poison()
     {
         registerParameters();
         
@@ -47,7 +47,7 @@ namespace MDB_Social {
         controllerMinimumWeight = -10.0;
         controllerMaximumWeight = 10.0;
         
-        babbling = static_cast<BabblingStandard*>(ModelLibrary::getModel("BabblingStandard", getID()));
+        babbling = static_cast<BabblingStandard*>(ModelLibrary::getModel("BabblingStandard"));
         std::vector<double> outmin(nboutputs, 0.2);
         std::vector<double> outmax(nboutputs, 1.0);
         babbling->setOutputMinMax(outmin,outmax);
@@ -56,6 +56,7 @@ namespace MDB_Social {
         
         logRobotPos = false;
         sensorLog = false;
+        logSocialLearning = false;
 //        valueFunctionTest = false;
                 
 #ifdef USE_REV
@@ -78,6 +79,9 @@ namespace MDB_Social {
         delete world;
         delete controller;
         delete babbling;
+        if (logSocialLearning)
+            socialLearningLogFile.close();
+        
 #ifdef USE_REV
         delete revinit;
         revinit = NULL;
@@ -113,7 +117,7 @@ namespace MDB_Social {
     {
         std::cout << "FastSim_Flower_Poison : registering the parameters...";
         std::cout.flush();
-//        Settings* settings = Settings::getInstance();
+        Settings* settings = RobotID::getSettings();
         settings->registerParameter<unsigned>("experiment.nbinputs", 1, "Number of inputs/sensors on the neural network.");
         settings->registerParameter<unsigned>("experiment.nboutputs", 2, "Number of outputs on the neural network.");
         settings->registerParameter<std::string>("experiment.hiddenNeurons", "10", "Number of hidden neurons for the controller.");
@@ -156,7 +160,7 @@ namespace MDB_Social {
         settings->registerParameter<bool>("experiment.socialLearningControllers", false, "Social Learning: exchange controllers.");
         settings->registerParameter<bool>("experiment.socialLearningValueFunctions", false, "Social Learning: exchange value functions.");
         settings->registerParameter<bool>("experiment.socialLearningTraces", false, "Social Learning: exchange traces.");
-        
+        settings->registerParameter<bool>("experiment.logSocialLearning", false, "Log all social interactions in a file.");
         std::cout << " DONE" << std::endl;
         
     }
@@ -164,7 +168,7 @@ namespace MDB_Social {
     void FastSim_Flower_Poison::loadParameters()
     {
         std::cout << "FastSim_Flower_Poison: Loading parameters..." << std::endl;
-//        Settings* settings = Settings::getInstance();
+        Settings* settings = RobotID::getSettings();
         std::string stFlowerTypes;
         std::string stPoisonTypes;
         std::string hiddenNeuronsStr;
@@ -212,7 +216,7 @@ namespace MDB_Social {
             socialLearningControllers = settings->value<bool>("experiment.socialLearningControllers").second;
             socialLearningValueFunctions = settings->value<bool>("experiment.socialLearningValueFunctions").second;
             socialLearningTraces = settings->value<bool>("experiment.socialLearningTraces").second;
-            
+            logSocialLearning = settings->value<bool>("experiment.logSocialLearning").second;
             
             
             babbling->loadParameters("experiment");
@@ -245,7 +249,7 @@ namespace MDB_Social {
         }
         
         // Initialize the controller
-        controller = static_cast<FeedforwardNN*>(ModelLibrary::getModel("Feedforward", getID()));
+        controller = static_cast<FeedforwardNN*>(ModelLibrary::getModel("Feedforward"));
         std::vector<enum FeedforwardNN::ActivationFunction> activationFunctions(1, FeedforwardNN::SIGMOID);
         if ( !(stringToVector(hiddenNeuronsStr, hiddenNeurons) ) ) {
             std::cerr << "FastSim_Flower_Poison : ERROR with hidden neuron description. A non numeral has been detected." << std::endl;
@@ -270,8 +274,6 @@ namespace MDB_Social {
 //            layers[1] = nboutputs;
 //        }
         controller->setup(layers, activationFunctions);
-                        
-
         
         if (showREV) {
 #ifdef USE_REV
@@ -328,15 +330,24 @@ namespace MDB_Social {
     void FastSim_Flower_Poison::preprocessing() 
     {
         // Let's get the list of robots.
+        ResourceLibraryData* resourceLibrary = RobotID::getResourceLibrary();
         SocialManagerClient* smclient = resourceLibrary->getSocialManagerClient();
 //        SocialManagerClient* smclient = NULL;
 //            std::cout << " p " << std::endl;
         if (smclient) {  // test if we are in a social environment
-
+            
+            if (!socialLearningLogFile.is_open()) {
+                std::string filename = resourceLibrary->getWorkingDirectory() + "/SocialLearning.log";
+                socialLearningLogFile.open(filename.c_str(), std::ios_base::trunc);
+                if (!socialLearningLogFile.is_open()) {
+                    std::cerr << "FastSim_Flower_Poison: ERROR when opening SocialLearning.log." << std::endl;
+                    exit(1);
+                }
+            }            
             smclient->synchronise();
 
             if (socialLearningControllers) {
-                std::string other_robot = smclient->getRandomRobotID(getID());
+                std::string other_robot = smclient->getRandomRobotID(RobotID::getID());
                 // Retrieve its genotypes
                 PolicyMemory* pm = smclient->getPolicyMemory(other_robot);
                 // Find the best policy and replace the worst current one
@@ -349,7 +360,7 @@ namespace MDB_Social {
                     }
                 }
                 // We have the best. We need to compare the fitness to the worst individual in our population
-                PolicyMemory* mypm = smclient->getPolicyMemory(getID());
+                PolicyMemory* mypm = smclient->getPolicyMemory(RobotID::getID());
                 unsigned worst = 0;
                 double worstFitness = (*mypm)[worst].getFitness();
                 for (unsigned i = 1; i < mypm->size(); ++i) {
@@ -361,6 +372,10 @@ namespace MDB_Social {
                 if (bestFitness > worstFitness) {
     //                std::cout << " Social learning: copying " << robotIds[other_robot] << ":" << best << " to " << getID() << ":" << worst << std::endl;
                     resourceLibrary->getGeneticAlgorithm()->importGenotype(&(*pm)[best], worst);
+                    
+                    if (logSocialLearning) {
+                        socialLearningLogFile << 0 << " " << RobotID::getID() << " " << other_robot << " " << best << " " << bestFitness << " " << worst << " " << worstFitness << std::endl; 
+                    }
                 }
             }
             
@@ -757,7 +772,7 @@ namespace MDB_Social {
         // In this experiment we evolve and test a policy. The policy uses the value function and the current state to decide what the next action should be.
         // This part only cares about the policy.
         // A reward will be given when the robot reaches a given distance from the light source.
-        
+
         testIndividual = _testIndividual;
         
         if (valueFunctionTest) {
@@ -775,7 +790,7 @@ namespace MDB_Social {
 //            testCompass();
 //            return -1.0;
 //        }
-        
+        ResourceLibraryData* resourceLibrary = RobotID::getResourceLibrary();
         std::string cwd = resourceLibrary->getWorkingDirectory();
         
         std::cout << "* ";
@@ -995,6 +1010,11 @@ namespace MDB_Social {
         if (sensorLog)
             sensorLogFile.close();
                 
+
+//        if (getID() == "RobotA")
+//            return 1.0;
+//        else
+//            return 2.0;
         return rewardTotal/(1.0*trialCount);
     }
 
@@ -1006,6 +1026,7 @@ namespace MDB_Social {
         std::cout << "Testing the value function:" ;
         std::cout.flush();
         
+        ResourceLibraryData* resourceLibrary = RobotID::getResourceLibrary();
         double robotRadius = world->getRobot()->get_radius();
         double w = world->getMapWidth() - 1.1*robotRadius;
         double deltax = 1.0;

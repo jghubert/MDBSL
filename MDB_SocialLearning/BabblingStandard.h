@@ -24,8 +24,13 @@
 
 namespace MDB_Social {
 
+    class Settings;
+    class ResourceLibraryData; 
+    
     class BabblingStandard: public Model {
     private:
+        Settings* settings;
+        ResourceLibraryData* resourceLibrary;
         TraceMemory* traceMemory;
 
         std::mt19937 mersenne_generator;
@@ -42,7 +47,7 @@ namespace MDB_Social {
         double computeNoveltyCoefficient(std::vector<double>& inputs, std::vector<double>& outputs) const;
         
     public:
-        BabblingStandard(std::string id="Default");
+        BabblingStandard();
         virtual ~BabblingStandard();
 
         

@@ -16,14 +16,17 @@
 #include "Settings.h"
 #include "GALibrary.hpp"
 #include "ResourceLibrary.hpp"
+#include "RobotID.h"
 
 namespace MDB_Social {
 
-    Policy::Policy() 
+    Policy::Policy()
     {
+        settings = RobotID::getSettings();
+        resourceLibrary = RobotID::getResourceLibrary();
         ga = NULL;
         babbling = new BabblingPolicy();
-        babbling->setID(robotid);
+//        babbling->setID(robotid);
         recommendBabbling = false;
     }
 
@@ -49,18 +52,19 @@ namespace MDB_Social {
 //        settings->registerParameter<std::string>("policy.geneticAlgorithmType", std::string("ECF"), "Type of genetic algorithm to use for evolving the policy.");
         if (settings->registerAndRetrieveParameter<std::string>(geneticAlgorithmType, "policy.geneticAlgorithmType", std::string("SimpleGeneticAlgorithm"), "Type of genetic algorithm to use for evolving the policy.")) {
             ga = GALibrary::getModel(geneticAlgorithmType);
-            ga->setID(robotid);
+//            ga->setID(getID());    // Not needed anymore as robotid is static for each thread
             ga->registerParameters();  // Should be automatically loaded from this call.
             resourceLibrary->setGeneticAlgorithm(ga);
         }
         
-        settings->registerCallbackFunction(this->callbackParameters, this);
+//        settings->registerCallbackFunction(this->callbackParameters, this);
         
         babbling->registerParameters();
     }
     
     bool Policy::initialise()
     {
+        loadParameters();
         if (!geneticAlgorithmType.empty()) {
             if (!ga) {
                 ga = GALibrary::getModel(geneticAlgorithmType);
@@ -114,13 +118,13 @@ namespace MDB_Social {
         ga->getFitnessFunction()->setBabblingRecommendation(b);
     }
 
-    void Policy::setID(std::string& _id)
-    {
-        RobotID::setID(_id);
-        if (ga)
-            ga->setID(_id);
-        babbling->setID(_id);
-    }
+//    void Policy::setID(std::string& _id)
+//    {
+//        RobotID::setID(_id);
+//        if (ga)
+//            ga->setID(_id);
+//        babbling->setID(_id);
+//    }
 
     void Policy::socialPreProcessing()
     {

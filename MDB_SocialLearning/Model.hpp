@@ -18,17 +18,15 @@
 #include <vector>
 
 #include "Memory.hpp"
-#include "RobotID.h"
 
 namespace MDB_Social {
-    class Model: public RobotID {
+    class Model{
     protected:
         std::string type;
         
         
     public:
-        Model(std::string _type, std::string id="Default"):
-        RobotID(id)
+        Model(std::string _type)
         {
             type = _type;
         }

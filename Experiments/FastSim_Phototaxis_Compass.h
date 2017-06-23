@@ -105,7 +105,7 @@ namespace MDB_Social {
         bool useBabbling() const { return useOnlyBabbling || this->recommendBabbling;}
         
     public:
-        FastSim_Phototaxis_Compass(std::string id="Default");
+        FastSim_Phototaxis_Compass();
         FastSim_Phototaxis_Compass(const FastSim_Phototaxis_Compass& orig);
         virtual ~FastSim_Phototaxis_Compass();
 

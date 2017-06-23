@@ -25,8 +25,7 @@
 
 namespace MDB_Social {
 
-    FastSim_MultiRobot_Phototaxis::FastSim_MultiRobot_Phototaxis(std::string id) 
-    :GAFitness(id)
+    FastSim_MultiRobot_Phototaxis::FastSim_MultiRobot_Phototaxis() 
     {
         registerParameters();
         
@@ -91,7 +90,7 @@ namespace MDB_Social {
     {
         std::cout << "FastSim_MultiRobot_Phototaxis : registering the parameters...";
         std::cout.flush();
-//        Settings* settings = Settings::getInstance();
+        Settings* settings = RobotID::getSettings();
         settings->registerParameter<unsigned>("experiment.nbinputs", 1, "Number of inputs/sensors on the neural network.");
         settings->registerParameter<unsigned>("experiment.nboutputs", 2, "Number of outputs on the neural network.");
         settings->registerParameter<unsigned>("experiment.hiddenNeurons", 10, "Number of hidden neurons for the controller.");
@@ -125,7 +124,7 @@ namespace MDB_Social {
     void FastSim_MultiRobot_Phototaxis::loadParameters()
     {
         std::cout << "FastSim_MultiRobot_Phototaxis: Loading parameters..." << std::endl;
-//        Settings* settings = Settings::getInstance();
+        Settings* settings = RobotID::getSettings();
         try {
             nbinputs = settings->value<unsigned>("experiment.nbinputs").second;
             nboutputs = settings->value<unsigned>("experiment.nboutputs").second;
@@ -213,7 +212,7 @@ namespace MDB_Social {
             unsigned other_robot;
             do
                 other_robot = lrand48() % robotIds.size();
-            while (robotIds[other_robot] == getID());
+            while (robotIds[other_robot] == RobotID::getID());
             // Retrieve its genotypes
             
             ValueFunction* vf = resourceLibrary->getValueFunction();
@@ -327,6 +326,7 @@ namespace MDB_Social {
             return -1.0;
         }
         
+        ResourceLibraryData* resourceLibrary = RobotID::getResourceLibrary();
         std::string cwd = resourceLibrary->getWorkingDirectory();
         
         std::cout << "* ";
@@ -503,6 +503,7 @@ namespace MDB_Social {
         std::cout << "Testing the value function:" ;
         std::cout.flush();
         
+        ResourceLibraryData* resourceLibrary = RobotID::getResourceLibrary();
         double robotRadius = world->getRobot()->get_radius();
         double w = world->getMapWidth() - 1.1*robotRadius;
         double deltax = 1.0;

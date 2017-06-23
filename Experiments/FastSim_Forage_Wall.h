@@ -138,7 +138,7 @@ namespace MDB_Social {
         void testCompass();
         
     public:
-        FastSim_Forage_Wall(std::string id="Default");
+        FastSim_Forage_Wall();
         FastSim_Forage_Wall(const FastSim_Forage_Wall& orig);
         virtual ~FastSim_Forage_Wall();
 

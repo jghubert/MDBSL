@@ -17,12 +17,15 @@
 #include "ResourceLibrary.hpp"
 #include "FeedforwardNN.h"
 #include <valarray>
+#include "RobotID.h"
 
 namespace MDB_Social {
 
-    ValueFunction::ValueFunction(std::string id)
-    : RobotID(id)
+    ValueFunction::ValueFunction()
     {
+        settings = RobotID::getSettings();
+        resourceLibrary = RobotID::getResourceLibrary();
+        
         vf = NULL;
         quality = 0.0;
         reliable = false;
@@ -89,7 +92,7 @@ namespace MDB_Social {
 //        Settings* settings = Settings::getInstance();
         if (settings->registerAndRetrieveParameter<std::string>(valueFunctionType, "ValueFunctionType", std::string("Feedforward"), "Type of the value function to use")) {
             vf = ModelLibrary::getModel(valueFunctionType);
-            vf->setID(robotid);
+//            vf->setID(robotid);
             vf->setExternalMemory((Memory<NeuralNetworkData>*)resourceLibrary->getValueFunctionMemory());
             vf->registerParameters("ValueFunction");
         }
@@ -355,14 +358,7 @@ namespace MDB_Social {
     {
         return vf->saveModelToFile(filename);
     }
- 
-    void ValueFunction::setID(std::string& _id)
-    {
-        RobotID::setID(_id);
-        if (vf)
-            vf->setID(_id);
-    }
-    
+     
     double ValueFunction::computeFamiliarity(Trace& t)
     {
         if (famtester) {
@@ -376,7 +372,7 @@ namespace MDB_Social {
     {
         // TODO: Consider different types of models between robots.
         Model* addvf;
-        addvf = ModelLibrary::getModel(valueFunctionType, getID());
+        addvf = ModelLibrary::getModel(valueFunctionType);
         addvf->setExternalMemory(vfmem);
         addvf->loadParameters("ValueFunction");
         addvf->initializeFromParameters();

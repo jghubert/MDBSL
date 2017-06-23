@@ -17,14 +17,17 @@
 #include <string>
 #include "TraceMemory.h"
 #include "Model.hpp"
-#include "RobotID.h"
 #include "FamiliarityTester.h"
 #include "ValueFunctionMemory.hpp"
 #include <list>
 
 namespace MDB_Social {
 
-    class ValueFunction: public RobotID {
+    class Settings;
+    class ResourceLibraryData;
+    
+    class ValueFunction
+    {
     public:
         enum QualityEvaluationFunction {
             SIMPLE_RATIO = 0,
@@ -40,6 +43,9 @@ namespace MDB_Social {
         };
 
     private:
+        Settings* settings;
+        ResourceLibraryData* resourceLibrary;
+
         // Here are the parameters for the value function.
         std::string valueFunctionType;
         
@@ -69,7 +75,7 @@ namespace MDB_Social {
         unsigned minimumRewardQualityMeasure();
         
     public:
-        ValueFunction(std::string id="Default");
+        ValueFunction();
         virtual ~ValueFunction();
 
         void registerParameters();
@@ -91,8 +97,6 @@ namespace MDB_Social {
         bool loadFamiliarityFromTraces(TraceMemory* tm);
         
         bool saveValueFunctionToFile(const char* filename);
-        
-        virtual void setID(std::string& _id);
         
         double computeFamiliarity(Trace& t);
         

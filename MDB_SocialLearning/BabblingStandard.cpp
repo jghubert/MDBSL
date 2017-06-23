@@ -15,13 +15,16 @@
 #include "BabblingStandard.h"
 #include "ResourceLibrary.hpp"
 #include "Settings.h"
+#include "RobotID.h"
 
 
 namespace MDB_Social {
 
-    BabblingStandard::BabblingStandard(std::string id):
-        Model("BabblingStandard", id)
+    BabblingStandard::BabblingStandard():
+        Model("BabblingStandard")
     {
+        resourceLibrary = RobotID::getResourceLibrary();
+        settings = RobotID::getSettings();
         traceMemory = resourceLibrary->getTraceMemory();
         
         noveltyTraceLength = 0;

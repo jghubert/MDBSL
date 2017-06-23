@@ -13,6 +13,7 @@
 
 #include "FastSimSimulator.h"
 #include "Settings.h"
+#include "RobotID.h"
 
 namespace MDB_Social {
 
@@ -62,8 +63,8 @@ namespace MDB_Social {
 
     void FastSimSimulator::registerParameters()
     {
-        std::cout << "FastSimSimulator::registerParameters : ID = " << getID() << std::endl;
-//        Settings* settings = Settings::getInstance();
+        std::cout << "FastSimSimulator::registerParameters : ID = " << RobotID::getID() << std::endl;
+        Settings* settings = RobotID::getSettings();
         settings->registerParameter<std::string>("simulator.fastsim.robotType", std::string("thymio"), "Indicate which robot to use in the simulator.");
         settings->registerParameter<std::string>("simulator.fastsim.mapfilename", std::string("NONE"), "Filename containing the map for the experiment.");
         settings->registerParameter<double>("simulator.fastsim.mapWidth", 100.0, "Size of the squared map.");
@@ -72,9 +73,9 @@ namespace MDB_Social {
     
     void FastSimSimulator::loadParameters()
     {
-        std::cout << "FastSimSimulator::registerParameters : ID = " << getID() << std::endl;
+        std::cout << "FastSimSimulator::registerParameters : ID = " << RobotID::getID() << std::endl;
         std::cout << "FastSimSimulator: loading parameters..." << std::endl;
-//        Settings* settings = Settings::getInstance();
+        Settings* settings = RobotID::getSettings();
         try {
             mapFilename = settings->value<std::string>("simulator.fastsim.mapfilename").second;
             mapWidth = settings->value<double>("simulator.fastsim.mapWidth").second;

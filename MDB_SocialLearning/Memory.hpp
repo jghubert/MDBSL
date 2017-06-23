@@ -48,7 +48,7 @@ namespace MDB_Social {
     };
     
     template <class dtype>
-    class Memory: public RobotID
+    class Memory
     {
         private:
             std::deque<dtype> data;

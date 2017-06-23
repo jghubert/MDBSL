@@ -14,6 +14,7 @@
 #include "SimpleGeneticAlgorithm.h"
 #include "Settings.h"
 #include "RandomGenerators.h"
+#include "ResourceLibrary.hpp"
 #include <string>
 
 namespace MDB_Social {
@@ -38,7 +39,7 @@ namespace MDB_Social {
         return genes.size();
     }
 
-    double SGAGenotype::operator[] (unsigned index)
+    double& SGAGenotype::operator[] (unsigned index)
     {
         return genes[index];
     }
@@ -52,10 +53,10 @@ namespace MDB_Social {
     {
         return fitness > b.fitness;
     }
-       
+    
     void SGAGenotype::randomize()
     {
-        UniformGenerator* ug = UniformGenerator::getInstance();
+        UniformGenerator* ug = RobotID::getResourceLibrary()->getUniformGenerator();
         for (size_t i=0; i < genes.size(); ++i)
             genes[i] = (*ug)();  // number within [0; 1]
     }
@@ -82,8 +83,8 @@ namespace MDB_Social {
 
     void SGAGenotype::mutate(double mproba, double mu, double std)
     {
-        GaussianGenerator* gg = GaussianGenerator::getInstance();
-        UniformGenerator* ug = UniformGenerator::getInstance();
+        GaussianGenerator* gg = RobotID::getResourceLibrary()->getGaussianGenerator();
+        UniformGenerator* ug = RobotID::getResourceLibrary()->getUniformGenerator();
 
         double tmp;
         for (size_t i=0; i<genes.size(); ++i) {
@@ -103,7 +104,7 @@ namespace MDB_Social {
 
     void SGAGenotype::cross(SGAGenotype* g, unsigned npoints)
     {
-        UniformIntegerGenerator* uig = UniformIntegerGenerator::getInstance();
+        UniformIntegerGenerator* uig = RobotID::getResourceLibrary()->getUniformIntegerGenerator();
         
         // First generate the indexes of the crossovers
         std::vector<unsigned> cpoints(npoints+2,0);
@@ -137,12 +138,12 @@ namespace MDB_Social {
     }
     
     
-    SimpleGeneticAlgorithm::SimpleGeneticAlgorithm() 
+    SimpleGeneticAlgorithm::SimpleGeneticAlgorithm()
     {
         elitism = 0;
         currentGeneration = 0;
-        uig = UniformIntegerGenerator::getInstance();
-        ug = UniformGenerator::getInstance();  
+        uig = resourceLibrary->getUniformIntegerGenerator();
+        ug = resourceLibrary->getUniformGenerator();  
         generationStep = 1;
     }
 
@@ -269,8 +270,17 @@ namespace MDB_Social {
     
     void SimpleGeneticAlgorithm::randomizePopulation()
     {
-        for (size_t i=0; i<populationSize; ++i)
+        for (size_t i=0; i<populationSize; ++i) {
+//            if (getID() == "RobotA") {
+//                for (unsigned g=0; g< population[i]->getSize(); ++g)
+//                    (*population[i])[g] = 0.1;
+//            }
+//            else
+//                for (unsigned g=0; g< population[i]->getSize(); ++g)
+//                    (*population[i])[g] = 0.7;
+//        }
             population[i]->randomize();
+        }
     }
 
     void SimpleGeneticAlgorithm::reset()

@@ -33,7 +33,7 @@ namespace MDB_Social {
         
         void setSize(unsigned s);
         virtual size_t getSize() const override;
-        virtual double operator[] (unsigned index) override;
+        virtual double& operator[] (unsigned index) override;
         void randomize();
         void reset();
         void mutate(double mproba=1.0, double mu=0.0, double std=0.0);

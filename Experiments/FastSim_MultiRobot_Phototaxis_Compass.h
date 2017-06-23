@@ -101,7 +101,7 @@ namespace MDB_Social {
         void testCompass();
         
     public:
-        FastSim_MultiRobot_Phototaxis_Compass(std::string id="Default");
+        FastSim_MultiRobot_Phototaxis_Compass();
         FastSim_MultiRobot_Phototaxis_Compass(const FastSim_MultiRobot_Phototaxis_Compass& orig);
         virtual ~FastSim_MultiRobot_Phototaxis_Compass();
 

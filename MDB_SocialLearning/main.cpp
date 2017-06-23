@@ -31,6 +31,7 @@ int main(int argc, char** argv)
         filename = argv[1];
     
     Manager manager(filename, argc, argv);
+    manager.initializeManager();
     
     settings->saveSettingsToFileRequested();
     if (!settings->printHelpIfRequested())

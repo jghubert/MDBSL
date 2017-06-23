@@ -40,7 +40,7 @@ namespace MDB_Social {
         
         virtual void loadParameters() override;
         
-    public:
+        public:
         FastSimSimulator();
         virtual ~FastSimSimulator();
 

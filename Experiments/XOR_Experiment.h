@@ -39,13 +39,15 @@ namespace MDB_Social {
 
         
     public:
-        XOR_Experiment(std::string id="Default");
+        XOR_Experiment();
         XOR_Experiment(const XOR_Experiment& orig);
         virtual ~XOR_Experiment();
 
         double evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual=false) override;
 
         void loadParameters() override;
+
+        virtual void preprocessing() override;
     };
 }
 

@@ -13,10 +13,14 @@
 
 #include <iostream>
 #include "XOR_Experiment.h"
+#include "../MDB_SocialLearning/ResourceLibrary.hpp"
+#include "../MDB_SocialLearning/SocialManagerClient.h"
+#include "../MDB_SocialLearning/Settings.h"
+#include "../MDB_SocialLearning/RobotID.h"
 
 namespace MDB_Social {
 
-    XOR_Experiment::XOR_Experiment(std::string id) 
+    XOR_Experiment::XOR_Experiment() 
     {
         registerParameters();
         nbinputs = 2;
@@ -41,7 +45,7 @@ namespace MDB_Social {
     {
         std::cout << "XOR_Experiment : registering the parameters...";
         std::cout.flush();
-//        Settings* settings = Settings::getInstance();
+        Settings* settings = RobotID::getSettings();
         settings->registerParameter<unsigned>("experiment.nbinputs", 1, "Number of inputs/sensors on the neural network.");
         settings->registerParameter<unsigned>("experiment.nboutputs", 2, "Number of outputs on the neural network.");
         settings->registerParameter<unsigned>("experiment.hiddenNeurons", 10, "Number of hidden neurons for the controller.");
@@ -53,7 +57,7 @@ namespace MDB_Social {
     void XOR_Experiment::loadParameters()
     {
         std::cout << "XOR_Experiment: Loading parameters..." << std::endl;
-//        Settings* settings = Settings::getInstance();
+        Settings* settings = RobotID::getSettings();
 
         try {
             nbinputs = settings->value<unsigned>("experiment.nbinputs").second;
@@ -85,6 +89,21 @@ namespace MDB_Social {
         
     }
 
+    void XOR_Experiment::preprocessing() 
+    {
+        // Let's get the list of robots.
+        ResourceLibraryData* resourceLibrary = RobotID::getResourceLibrary();
+        SocialManagerClient* smclient = resourceLibrary->getSocialManagerClient();
+//        SocialManagerClient* smclient = NULL;
+//            std::cout << " p " << std::endl;
+        if (smclient) {  // test if we are in a social environment
+
+            smclient->synchronise();
+            
+        }        
+    }
+    
+    
     void XOR_Experiment::installGenotype(Genotype& individual)
     {
         std::vector<FeedforwardNN::weight_t> weights(individual.getSize());
@@ -112,6 +131,9 @@ namespace MDB_Social {
         std::vector<double> nnoutput(nboutputs);
         
         installGenotype(individual);
+
+        std::cout << "* ";
+        std::cout.flush();
         
         double fitness = 0.0;
         
