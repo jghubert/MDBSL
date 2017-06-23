@@ -16,44 +16,63 @@
 #include "ResourceLibrary.hpp"
 
 namespace MDB_Social {
+    __thread RobotID* RobotID::instance = NULL;
 
+    
     RobotID::RobotID() 
     {
         robotid = "Default";
-        
-        settings = NULL;
-        resourceLibrary = NULL;
+        settings = SettingsLibrary::getInstance(robotid);
+        resourceLibrary = ResourceLibrary::getInstance(robotid);
     }
 
-    RobotID::RobotID(std::string id)
+    RobotID::RobotID(std::string id):
+        robotid(id)
     {
-        robotid = id;
-        
         settings = SettingsLibrary::getInstance(robotid);
         resourceLibrary = ResourceLibrary::getInstance(robotid);
     }
     
-    
-    RobotID::RobotID(const RobotID& orig) 
-    {
-        
-    }
-
     RobotID::~RobotID() 
     {
         
     }
 
-    void RobotID::setID(std::string& _id)
+    void RobotID::setID(std::string _id)
     {
-        robotid = _id;
-        settings = SettingsLibrary::getInstance(robotid);
-        resourceLibrary = ResourceLibrary::getInstance(robotid);
+        if (!instance) {
+            instance = new RobotID(_id);
+        }
+        else {
+            instance->robotid = _id;
+            instance->settings = SettingsLibrary::getInstance(instance->robotid);
+            instance->resourceLibrary = ResourceLibrary::getInstance(instance->robotid);
+            
+        }
     }
     
-    std::string RobotID::getID() const
+    std::string RobotID::getID()
     {
-        return robotid;
+        if (instance)
+            return instance->robotid;
+        else
+            return std::string();
+    }
+
+    Settings* RobotID::getSettings()
+    {
+        if (instance)
+            return instance->settings;
+        else
+            return NULL;
+    }
+    
+    ResourceLibraryData* RobotID::getResourceLibrary()
+    {
+        if (instance)
+            return instance->resourceLibrary;
+        else
+            return NULL;
     }
 
 }

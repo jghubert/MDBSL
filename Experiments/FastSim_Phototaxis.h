@@ -89,7 +89,7 @@ namespace MDB_Social {
         void testValueFunction();
         
     public:
-        FastSim_Phototaxis(std::string id="Default");
+        FastSim_Phototaxis();
         FastSim_Phototaxis(const FastSim_Phototaxis& orig);
         virtual ~FastSim_Phototaxis();
 

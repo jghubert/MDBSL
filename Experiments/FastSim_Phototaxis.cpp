@@ -24,8 +24,7 @@
 
 namespace MDB_Social {
 
-    FastSim_Phototaxis::FastSim_Phototaxis(std::string id) 
-    :GAFitness(id)
+    FastSim_Phototaxis::FastSim_Phototaxis() 
     {
         registerParameters();
         
@@ -45,7 +44,7 @@ namespace MDB_Social {
         controllerMinimumWeight = -10.0;
         controllerMaximumWeight = 10.0;
         
-        babbling = static_cast<BabblingStandard*>(ModelLibrary::getModel("BabblingStandard", getID()));
+        babbling = static_cast<BabblingStandard*>(ModelLibrary::getModel("BabblingStandard"));
         std::vector<double> outmin(nboutputs, 0.2);
         std::vector<double> outmax(nboutputs, 1.0);
         babbling->setOutputMinMax(outmin,outmax);
@@ -90,7 +89,7 @@ namespace MDB_Social {
     {
         std::cout << "FastSim_Phototaxis : registering the parameters...";
         std::cout.flush();
-//        Settings* settings = Settings::getInstance();
+        Settings* settings = RobotID::getSettings();
         settings->registerParameter<unsigned>("experiment.nbinputs", 1, "Number of inputs/sensors on the neural network.");
         settings->registerParameter<unsigned>("experiment.nboutputs", 2, "Number of outputs on the neural network.");
         settings->registerParameter<unsigned>("experiment.hiddenNeurons", 10, "Number of hidden neurons for the controller.");
@@ -124,7 +123,7 @@ namespace MDB_Social {
     void FastSim_Phototaxis::loadParameters()
     {
         std::cout << "FastSim_Phototaxis: Loading parameters..." << std::endl;
-//        Settings* settings = Settings::getInstance();
+        Settings* settings = RobotID::getSettings();
         try {
             nbinputs = settings->value<unsigned>("experiment.nbinputs").second;
             nboutputs = settings->value<unsigned>("experiment.nboutputs").second;
@@ -162,7 +161,7 @@ namespace MDB_Social {
             exit(1);
         }
         
-        controller = static_cast<FeedforwardNN*>(ModelLibrary::getModel("Feedforward", getID()));
+        controller = static_cast<FeedforwardNN*>(ModelLibrary::getModel("Feedforward"));
         std::vector<enum FeedforwardNN::ActivationFunction> activationFunctions(1, FeedforwardNN::SIGMOID);
         if (hiddenNeurons) {
             layers.resize(3);
@@ -268,7 +267,7 @@ namespace MDB_Social {
             testValueFunction();
             return -1.0;
         }
-        
+        ResourceLibraryData* resourceLibrary = RobotID::getResourceLibrary();
         std::string cwd = resourceLibrary->getWorkingDirectory();
         
         std::cout << "* ";
@@ -444,6 +443,7 @@ namespace MDB_Social {
 
         std::cout << "Testing the value function:" ;
         std::cout.flush();
+        ResourceLibraryData* resourceLibrary = RobotID::getResourceLibrary();
         
         double robotRadius = world->getRobot()->get_radius();
         double w = world->getMapWidth() - 1.1*robotRadius;

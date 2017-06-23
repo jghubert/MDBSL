@@ -17,10 +17,11 @@
 #include "RobotID.h"
 #include "ResourceLibrary.hpp"
 #include "TraceMemory.h"
+#include "RobotID.h"
 
 namespace MDB_Social {
 
-    class Simulator: public RobotID
+    class Simulator
     {
     private:
         
@@ -29,14 +30,15 @@ namespace MDB_Social {
         TraceMemory* traceMemory;
     public:
         Simulator() {
+            traceMemory = RobotID::getResourceLibrary()->getTraceMemory();
         }
 
 //        virtual ~Simulator();
 
-        virtual void setID(std::string& _id) override {
-            RobotID::setID(_id);
-            traceMemory = resourceLibrary->getTraceMemory();
-        }
+//        virtual void setID(std::string& _id) override {
+//            RobotID::setID(_id);
+//            traceMemory = resourceLibrary->getTraceMemory();
+//        }
         
         virtual void step() = 0;
         

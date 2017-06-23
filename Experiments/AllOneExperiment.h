@@ -29,6 +29,7 @@ namespace MDB_Social {
         double evaluateFitness(Genotype& individual, unsigned gen, unsigned ind, bool _testIndividual=false) override;
         
         void loadParameters() override;
+        virtual void preprocessing() override;
     };
     
 }

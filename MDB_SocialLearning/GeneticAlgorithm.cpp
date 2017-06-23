@@ -11,6 +11,8 @@
 #include "FitnessLibrary.hpp"
 #include "SimulatorLibrary.hpp"
 #include "TraceMemory.h"
+#include "ResourceLibrary.hpp"
+#include "RobotID.h"
 
 namespace MDB_Social {
 
@@ -34,7 +36,7 @@ namespace MDB_Social {
     Simulator* GAFitness::getSimulator(std::string sim)
     {
         Simulator* ret = SimulatorLibrary::getSimulator(sim);
-        ret->setID(robotid);
+//        ret->setID(robotid);
         return ret;
     }
 
@@ -43,8 +45,11 @@ namespace MDB_Social {
     {
         fitness = NULL;
         experiment = "NONE";
+        
+        settings = RobotID::getSettings();
+        resourceLibrary = RobotID::getResourceLibrary();
     }
-    
+        
     GeneticAlgorithm::~GeneticAlgorithm()
     {
         if (fitness)
@@ -59,7 +64,7 @@ namespace MDB_Social {
         if (settings->registerAndRetrieveParameter<std::string>(experiment, "ga.experiment", std::string("NONE"), "Name of the experiment to run.")) {
             std::cout << "GeneticAlgorithm - Loading experiment " << experiment << std::endl;
             if (experiment != "NONE") {
-                fitness = FitnessLibrary::getFitness(experiment, getID());
+                fitness = FitnessLibrary::getFitness(experiment);
                 if (!fitness) {
                     std::cerr << "GeneticAlgorithm - Error: Experiment " << experiment << " unknown." << std::endl;
                     exit(1);
@@ -81,7 +86,7 @@ namespace MDB_Social {
     void GeneticAlgorithm::initialise()
     {
         if (experiment != "NONE" && !fitness) {
-            fitness = FitnessLibrary::getFitness(experiment, getID());
+            fitness = FitnessLibrary::getFitness(experiment);
             if (!fitness) {
                 std::cerr << "GeneticAlgorithm - Error: Experiment " << experiment << " unknown." << std::endl;
                 exit(1);
@@ -121,13 +126,6 @@ namespace MDB_Social {
     {
         return fitness;
     }
-
-    void GeneticAlgorithm::setID(std::string& _id)
-    {
-        RobotID::setID(_id);
-        if (fitness)
-            fitness->setID(_id);
-    }
     
     void GeneticAlgorithm::importGenotype(Genotype* ind, int destination)
     {
@@ -144,7 +142,7 @@ namespace MDB_Social {
     {
         TraceMemory* tm = resourceLibrary->getTraceMemory();
         if (tm)
-            tm->setDefaultUUID(ind->getID());
+            tm->setDefaultUUID(ind->getUUID());
     }
     
     void GeneticAlgorithm::stopRecordingTraces()

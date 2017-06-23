@@ -146,6 +146,8 @@ namespace MDB_Social {
         std::ofstream robotLogPosFile;
         bool sensorLog;
         std::ofstream sensorLogFile;
+        bool logSocialLearning;
+        std::ofstream socialLearningLogFile;
         
         void registerParameters();
         
@@ -191,7 +193,7 @@ namespace MDB_Social {
 //        void testCompass();
         
     public:
-        FastSim_Flower_Poison(std::string id="Default");
+        FastSim_Flower_Poison();
         FastSim_Flower_Poison(const FastSim_Flower_Poison& orig);
         virtual ~FastSim_Flower_Poison();
 

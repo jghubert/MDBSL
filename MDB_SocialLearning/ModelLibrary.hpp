@@ -29,26 +29,26 @@ namespace MDB_Social {
     
     class ModelLibrary {
     private:
-        static Model* getFeedforward(std::string id) {
+        static Model* getFeedforward() {
 #ifdef USE_FANN
-            return new FeedforwardNN(id);
+            return new FeedforwardNN();
 #else
             std::cerr << "Model Library Error: getFeedforward has no model to propose. Compile with the FANN option to use the FANN library." << std::endl;
             return NULL;
 #endif            
         }
         
-        static Model* getBabblingStandard(std::string id) {
-            return new BabblingStandard(id);
+        static Model* getBabblingStandard() {
+            return new BabblingStandard();
         }
         
     public:
-        static Model* getModel(std::string type, std::string id="Default") {
+        static Model* getModel(std::string type) {
             if (type == "Feedforward") {
-                return getFeedforward(id);
+                return getFeedforward();
             }
             else if (type == "BabblingStandard") {
-                return getBabblingStandard(id);
+                return getBabblingStandard();
             }
             else
                 return NULL;

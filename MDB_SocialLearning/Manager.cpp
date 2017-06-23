@@ -15,12 +15,15 @@
 #include "FitnessLibrary.hpp"
 #include "RandomGenerators.h"
 #include <iostream>
+#include "ResourceLibrary.hpp"
+#include "Settings.h"
 #include <errno.h>
 #include <cmath>
 #include <boost/filesystem.hpp>
 #include <unistd.h>
 #include "SocialManager.h"
 #include "SocialManagerClient.h"
+#include "RobotID.h"
 
 // Manager should initialize the structures: Memories, value function, policy evolution and babbling
 // It should also load the settings
@@ -29,50 +32,91 @@ using namespace boost::filesystem;
 
 namespace MDB_Social {
 
-    Manager::Manager(const char* settingfile, int argc, char* argv[], std::string _ID)
-        : RobotID(_ID)
+    Manager::Manager(const char* _settingfile, int _argc, char* _argv[], std::string _ID, std::string _cwd)
     {
-//        setID(_ID);
-        std::cout << "Manager: robotid = " << getID() << std::endl;
-        
-        RandomGenerator::InitializeRandomSeed();
+        localRobotID = _ID;
+        initialized = false;
+        cwd = _cwd;
+        argc = _argc;
+        argv = _argv;
+        settingFile = std::string(_settingfile);
+
+        settings = SettingsLibrary::getInstance(_ID);
+        resourceLibrary = ResourceLibrary::getInstance(_ID);
         
         smc = NULL;
         socialMode = false;
         testIndividualNoValueFunction = false;
         testIndividualNoTrace = false;
         testGeneration = false;
+        resourceLibrary->setWorkingDirectory(_cwd);
         
-//        settings = SettingsLibrary::getInstance(ID);
-        settings->setParameterSources(settingfile, argc, argv);
-        resourceLibrary = ResourceLibrary::getInstance(robotid);
-
-        traceMemory = new TraceMemory();
-        traceMemory->setID(robotid);
-        vfMemory = new ValueFunctionMemory();
-        vfMemory->setID(robotid);
-        policyMemory = new PolicyMemory();
-        policyMemory->setID(robotid);
-        resourceLibrary->setTraceMemory(traceMemory);
-        resourceLibrary->setValueFunctionMemory(vfMemory);
-        resourceLibrary->setPolicyMemory(policyMemory);
-
         traceMemoryMaximumSize = 0;
         deactivateValueFunction = false;
         deactivateBabbling = false;
         
+    }
+    
+    Manager::~Manager()
+    {
+        delete vf;
+        delete policyGA;
+        delete traceMemory;
+        delete policyMemory;
+        delete resourceLibrary->getGaussianGenerator();
+        delete resourceLibrary->getUniformGenerator();
+        delete resourceLibrary->getUniformIntegerGenerator();
+        delete resourceLibrary;
+        delete settings;
+        if (smc)
+            delete smc;
+    }
+
+    void Manager::initializeManager()
+    {
+        if (initialized)
+            return;
+//        setID(_ID);
+        RobotID::setID(localRobotID);
+        settings = RobotID::getSettings();
+        resourceLibrary = RobotID::getResourceLibrary();
+        std::cout << "Manager: robotid = " << RobotID::getID() << std::endl;
+        
+        RandomGenerator::InitializeRandomSeed();
+        resourceLibrary->setUniformGenerator(UniformGenerator::getLocalInstance());
+        resourceLibrary->setUniformIntegerGenerator(UniformIntegerGenerator::getLocalInstance());
+        resourceLibrary->setGaussianGenerator(GaussianGenerator::getLocalInstance());
+        resourceLibrary->getGaussianGenerator()->InitializeRandomSeed();
+        resourceLibrary->getUniformGenerator()->InitializeRandomSeed();
+        resourceLibrary->getUniformIntegerGenerator()->InitializeRandomSeed();
+        
+        
+//        settings = SettingsLibrary::getInstance(ID);
+        settings->setParameterSources(settingFile.c_str(), argc, argv);
+//        resourceLibrary = ResourceLibrary::getInstance(robotid);
+
+        traceMemory = new TraceMemory();
+//        traceMemory->setID(RobotID::robotid);
+        vfMemory = new ValueFunctionMemory();
+//        vfMemory->setID(RobotID::robotid);
+        policyMemory = new PolicyMemory();
+//        policyMemory->setID(RobotID::robotid);
+        resourceLibrary->setTraceMemory(traceMemory);
+        resourceLibrary->setValueFunctionMemory(vfMemory);
+        resourceLibrary->setPolicyMemory(policyMemory);
+                
         vf = new ValueFunction();
-        vf->setID(robotid);
+//        vf->setID(RobotID::robotid);
         vf->registerParameters();
 
         policyGA = new Policy();
-        policyGA->setID(robotid);
+//        policyGA->setID(RobotID::robotid);
         policyGA->registerParameters();
         
         this->registerParameters();
         
         // Let's load the settings from the file and the arguments
-        if (!settings->processAllParameters(settingfile, argc, argv)) {
+        if (!settings->processAllParameters(settingFile.c_str(), argc, argv)) {
             std::cerr << "Manager:: Error loading the parameters." << std::endl;
             exit(1);
         }
@@ -88,22 +132,10 @@ namespace MDB_Social {
         resourceLibrary->setPolicy(policyGA);
         resourceLibrary->setValueFunction(vf);
         
+        
         stepCounter = 0;
+        initialized = true;
         
-        
-        
-    }
-    
-    Manager::~Manager()
-    {
-        delete vf;
-        delete policyGA;
-        delete traceMemory;
-        delete policyMemory;
-        delete resourceLibrary;
-        delete settings;
-        if (smc)
-            delete smc;
     }
 
     void Manager::reset()
@@ -134,7 +166,7 @@ namespace MDB_Social {
         settings->registerParameter<unsigned>("General.traceMemoryMaximumSize", 0, "Maximum size for the trace memory (0 = unlimited).");
         settings->registerParameter<bool>("General.deactivateValueFunction", false, "Do not use the value function if set to true.");
         settings->registerParameter<bool>("General.deactivateBabbling", false, "Do not use babbling if set to true.");
-        settings->registerParameter<std::string>("General.workingDirectory", std::string("."), "Set the working directory of the robot. In social mode, the default is the ID of the robot.");
+//        settings->registerParameter<std::string>("General.workingDirectory", std::string("."), "Set the working directory of the robot. In social mode, the default is the ID of the robot.");
         
         settings->registerParameter<int>("General.experimentCycles", 0, "Number of cycles of controller-value function optimization to run.");
     }
@@ -162,11 +194,11 @@ namespace MDB_Social {
         deactivateValueFunction = settings->value<bool>("General.deactivateValueFunction").second;
         deactivateBabbling = settings->value<bool>("General.deactivateBabbling").second;
         experimentCycles = settings->value<int>("General.experimentCycles").second;
-        workingDirectory = settings->value<std::string>("General.workingDirectory").second;
-        if (workingDirectory.back() == '/')
-            workingDirectory.erase(workingDirectory.size()-1);
-        if (!changeWorkingDirectory(workingDirectory.c_str()))
-            exit(1);
+//        workingDirectory = settings->value<std::string>("General.workingDirectory").second;
+//        if (workingDirectory.back() == '/')
+//            workingDirectory.erase(workingDirectory.size()-1);
+//        if (!changeWorkingDirectory(workingDirectory.c_str()))
+//            exit(1);
     }
 
     
@@ -202,6 +234,7 @@ namespace MDB_Social {
     
     void Manager::operator()()
     {
+        initializeManager();
         runExperiment();
     }
 
@@ -284,6 +317,8 @@ namespace MDB_Social {
     void Manager::processTraceMemory()
     {
         // Need to backpropagate the rewards.
+        if (!traceMemory->size())
+            return;
         
         traceMemory->trimMemory();
         
@@ -416,16 +451,6 @@ namespace MDB_Social {
         }
     }
 
-    void Manager::setID(std::string& _id)
-    {
-        RobotID::setID(_id);
-        vf->setID(_id);
-        policyGA->setID(_id);
-        vfMemory->setID(_id);
-        traceMemory->setID(_id);
-        policyMemory->setID(_id);
-    }
-
     ValueFunctionMemory* Manager::getVFMemory()
     {
         return vfMemory;
@@ -448,7 +473,7 @@ namespace MDB_Social {
         }
 
         smc->setupLocalConnection(sm);
-        
+        std::cout << "****************** Manager::initializeLocalConnection : ID = " << resourceLibrary->getLocalID() << std::endl;
         resourceLibrary->setSocialManagerClient(smc);
     }
     
@@ -456,9 +481,9 @@ namespace MDB_Social {
     {
         socialMode = mode;
         if (socialMode) {
-            createWorkingDirectory(getID().c_str());
-            workingDirectory += std::string("/") + getID();
-            resourceLibrary->setWorkingDirectory(workingDirectory);
+            createWorkingDirectory(resourceLibrary->getWorkingDirectory().c_str());
+//            workingDirectory += std::string("/") + ;
+//            resourceLibrary->setWorkingDirectory(workingDirectory);
         }
     }
     
@@ -474,13 +499,13 @@ namespace MDB_Social {
         if (!exists(p)) {
             ret = create_directory(p);
             if (!ret) {
-                std::cerr << "Manager (robotid = " << getID() << "): Error creating the working directory. Directory " << foldername << " cannot be created and does not exist." << std::endl;
+                std::cerr << "Manager (robotid = " << RobotID::getID() << "): Error creating the working directory. Directory " << foldername << " cannot be created and does not exist." << std::endl;
                 exit (1);
             }
         }
         ret = is_directory(p);
         if (!ret) {
-            std::cerr << "Manager (robotid = " << getID() << "): Error with the working directory. " << foldername << " already exists and is not a directory." << std::endl;
+            std::cerr << "Manager (robotid = " << RobotID::getID() << "): Error with the working directory. " << foldername << " already exists and is not a directory." << std::endl;
             exit(1);
         }
         return ret;

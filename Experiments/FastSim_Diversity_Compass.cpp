@@ -20,14 +20,14 @@
 #include <cassert>
 #include "../MDB_SocialLearning/ResourceLibrary.hpp"
 #include "../MDB_SocialLearning/ValueFunction.h"
+#include "RobotID.h"
 
 namespace MDB_Social {
 
 // TODO: this is in large part a copy of FastSim_Phototaxis_Compass, should refactor to deduplicate code (e.g., common base class?)
 
 
-    FastSim_Diversity_Compass::FastSim_Diversity_Compass(std::string id) 
-    :FastSim_Phototaxis_Compass(id)
+    FastSim_Diversity_Compass::FastSim_Diversity_Compass() 
     {
     }
 
@@ -104,6 +104,7 @@ namespace MDB_Social {
     	std::swap(oldUseOnlyBabbling, useOnlyBabbling);
     	
         // log start of trace for this individual
+        ResourceLibrary* resourceLibrary = RobotID::getResourceLibrary();
         TraceMemory* tm = resourceLibrary->getTraceMemory();
         size_t traceOffset = tm->size();    // Won't work if the memory is full and new inputs erase older.
 
@@ -136,7 +137,7 @@ namespace MDB_Social {
 			std::transform(sumActivationLevels.inputs_t1.begin(), sumActivationLevels.inputs_t1.end(),
 					std::back_inserter(behaviour), d);
 
-			behaviours[individual.getID()] = behaviour;
+			behaviours[individual.getUUID()] = behaviour;
         }
 
     	return fitness;
@@ -172,10 +173,10 @@ namespace MDB_Social {
 			// and set that as fitness;
 
 			double distance = 0.0;
-			DistanceTo d(behaviours[individual.getID()]);
+			DistanceTo d(behaviours[individual.getUUID()]);
 
 			for (std::map<boost::uuids::uuid, BehaviourDescription>::iterator i = behaviours.begin(); i != behaviours.end(); ++i) {
-				if (i->first != individual.getID()) {
+				if (i->first != individual.getUUID()) {
 					distance += d(i->second);
 				}
 			}

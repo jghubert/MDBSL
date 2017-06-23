@@ -23,19 +23,23 @@ namespace MDB_Social {
     
     class RobotID {
     protected:
-        std::string robotid;
-        
+         std::string robotid;
+        // __thread
         Settings* settings;
         ResourceLibraryData* resourceLibrary;
-
-    public:
+        
         RobotID();
         RobotID(std::string id);
-        RobotID(const RobotID& orig);
-        virtual ~RobotID();
+    public:
+        __thread static RobotID* instance;
 
-        virtual void setID(std::string& _id);
-        std::string getID() const;
+        ~RobotID();
+
+        static void setID(std::string _id);
+        static std::string getID();
+        
+        static Settings* getSettings();
+        static ResourceLibraryData* getResourceLibrary();
     };
 
 }

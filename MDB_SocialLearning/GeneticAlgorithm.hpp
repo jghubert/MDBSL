@@ -20,8 +20,6 @@
 #include <boost/uuid/uuid_generators.hpp> // generators
 #include <boost/uuid/uuid_io.hpp>         // streaming operators etc.
 #include "Memory.hpp"
-#include "Settings.h"
-#include "RobotID.h"
 
 namespace MDB_Social {
     
@@ -40,11 +38,11 @@ namespace MDB_Social {
         virtual ~Genotype() {};
         
         virtual size_t getSize() const {return genes.size();};
-        virtual double operator[] (unsigned index) {return genes[index];};
+        virtual double& operator[] (unsigned index) {return genes[index];};
         virtual void setFitness(double _fit) {fitness = _fit;}
         virtual double getFitness() const {return fitness;}
 
-        boost::uuids::uuid& getID() {return id;}
+        boost::uuids::uuid& getUUID() {return id;}
         
         Genotype& operator= (std::vector<double>& V);
         Genotype& operator= (Genotype& G);
@@ -89,12 +87,12 @@ namespace MDB_Social {
     
     class Simulator;
     
-    class GAFitness: public RobotID {
+    class GAFitness {
     protected:
         bool recommendBabbling;
         
     public:
-        GAFitness(std::string id="Default") : RobotID(id) {recommendBabbling = false;}
+        GAFitness() {recommendBabbling = false;}
         virtual ~GAFitness() {}
 
         virtual void preprocessing() {};    // Called before testing the current generation (SL specific, apparently)
@@ -115,11 +113,18 @@ namespace MDB_Social {
         
         Simulator* getSimulator(std::string sim);
     };
+
+    class ResourceLibraryData;
+    class Settings;
     
-    class GeneticAlgorithm: public RobotID {
+    class GeneticAlgorithm
+    {
     protected:
         virtual void loadParameters();
 
+        Settings* settings;
+        ResourceLibraryData* resourceLibrary;
+        
         GAFitness* fitness;
         std::string experiment;
         std::string workingDirectory;
@@ -145,8 +150,6 @@ namespace MDB_Social {
         virtual void setExternalMemory(Memory<Genotype>* mem);
         
         virtual GAFitness* getFitnessFunction();
-
-        virtual void setID(std::string& _id);
         
         virtual void importGenotype(Genotype* ind, int destination);
 

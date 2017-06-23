@@ -31,7 +31,7 @@ namespace MDB_Social {
     public:        
         typedef std::vector<double> BehaviourDescription;
 
-        FastSim_Diversity_Compass(std::string id="Default");
+        FastSim_Diversity_Compass();
         FastSim_Diversity_Compass(const FastSim_Diversity_Compass& orig);
         virtual ~FastSim_Diversity_Compass();
 

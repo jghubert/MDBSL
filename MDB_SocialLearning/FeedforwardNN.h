@@ -88,7 +88,7 @@ namespace MDB_Social {
             BIT = FANN::STOPFUNC_BIT
         };
 
-        FeedforwardNN(std::string id="Default");
+        FeedforwardNN();
         ~FeedforwardNN();
 
         virtual void registerParameters(std::string prefix=std::string()) override;

@@ -111,7 +111,7 @@ namespace MDB_Social {
         Manager *mg;
         for (unsigned i=0; i<nbrobots; ++i) {
             std::cout << Color::Modifier(Color::Code::FG_GREEN) << "             Loading robot " << robotIDs[i] << Color::Modifier(Color::Code::FG_DEFAULT) << std::endl;
-            mg = new Manager(robotConfigFiles[i].c_str(), 0, NULL, robotIDs[i]);
+            mg = new Manager(robotConfigFiles[i].c_str(), 0, NULL, robotIDs[i], robotIDs[i]);
             robots[robotIDs[i]] = mg;
             mg->initializeLocalConnection(this);
             mg->setSocialMode(true);

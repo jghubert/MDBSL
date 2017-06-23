@@ -18,8 +18,8 @@
 
 namespace MDB_Social {
 
-    FeedforwardNN::FeedforwardNN(std::string id) :
-        Model("FeedforwardNN", id)
+    FeedforwardNN::FeedforwardNN()
+    :Model("Feedforward")
     {
         minWeights = 0.0;
         maxWeights = 0.1;
@@ -300,7 +300,7 @@ namespace MDB_Social {
 
     void FeedforwardNN::registerParameters(std::string prefix)
     {
-//        Settings* settings = Settings::getInstance();
+        Settings* settings = RobotID::getSettings();
         settings->registerParameter<int>((prefix+".nbinputs").c_str(), 0, "FeedforwardNN: Number of inputs.");
         settings->registerParameter<int>((prefix+".nboutputs").c_str(), 0, "FeedforwardNN:  Number of outputs.");
         settings->registerParameter<std::string>((prefix+".hidden").c_str(), std::string("0"), "FeedforwardNN: Number of neurons in each hidden layer.");
@@ -313,7 +313,7 @@ namespace MDB_Social {
     
     void FeedforwardNN::loadParameters(std::string prefix)
     {
-//        Settings* settings = Settings::getInstance();
+        Settings* settings = RobotID::getSettings();
         layers.clear();
         nbinputs = settings->value<int>((prefix+".nbinputs").c_str()).second;
         nboutputs = settings->value<int>((prefix+".nboutputs").c_str()).second;
