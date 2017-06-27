@@ -107,8 +107,11 @@ namespace MDB_Social {
         }
         tmp.push_back(number);
         ret.resize(tmp.size());
-        
-        std::copy(tmp.begin(), tmp.end(), ret.begin());
+
+        if (tmp.size() > 0 && *(tmp.begin()) > 0)
+            std::copy(tmp.begin(), tmp.end(), ret.begin());
+        else
+            ret.clear();
         
         return ok;
     }
