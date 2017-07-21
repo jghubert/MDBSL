@@ -27,6 +27,7 @@ namespace MDB_Social {
     {
         genes = G.genes;
         fitness = G.fitness;
+        id = G.id;
         return *this;
     }
     

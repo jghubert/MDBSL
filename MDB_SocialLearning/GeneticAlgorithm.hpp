@@ -43,6 +43,7 @@ namespace MDB_Social {
         virtual double getFitness() const {return fitness;}
 
         boost::uuids::uuid& getUUID() {return id;}
+        void regenerateUUID() {id = boost::uuids::random_generator()();}
         
         Genotype& operator= (std::vector<double>& V);
         Genotype& operator= (Genotype& G);

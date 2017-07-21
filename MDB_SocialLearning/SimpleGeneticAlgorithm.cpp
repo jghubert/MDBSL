@@ -413,8 +413,12 @@ namespace MDB_Social {
     {
 //        std::vector<SGAGenotype*> newPopulation(populationSize, NULL);
         
-        for (unsigned i=0; i<elitism; ++i)
+        for (unsigned i=0; i<elitism; ++i) {
             newPopulation[i]->copy(population[i]);
+            newPopulation[i]->regenerateUUID();
+            if (logPhylogeneticTree)
+                phylogeneticFile << currentGeneration << " " << newPopulation[i]->getUUID() << std::endl;
+        }
 //            newPopulation[i] = population[i];
         
         switch (selectionAlgorithm) {
@@ -438,6 +442,8 @@ namespace MDB_Social {
             
 //            newPopulation[i] = population[mother]->clone();
             newPopulation[i]->copy(population[mother]);
+            newPopulation[i]->regenerateUUID();
+
             if (logPhylogeneticTree)
                 phylogeneticFile << currentGeneration << " " << newPopulation[i]->getUUID() << " " << population[mother]->getUUID();
 
