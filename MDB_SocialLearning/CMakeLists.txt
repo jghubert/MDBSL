@@ -27,6 +27,10 @@ if (USE_FANN)
     set (MDB_SocialLearning_LIB_SOURCES ${MDB_SocialLearning_LIB_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/FeedforwardNN.cpp)
 endif (USE_FANN)
 
+if (USE_GAUSSIAN_PROCESS)
+    set (MDB_SocialLearning_LIB_SOURCES ${MDB_SocialLearning_LIB_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/GaussianProcess.cpp)
+endif(USE_GAUSSIAN_PROCESS)
+
 if (USE_FASTSIM)
     set (MDB_SocialLearning_LIB_SOURCES ${MDB_SocialLearning_LIB_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/FastSimSimulator.cpp)
 endif (USE_FASTSIM)

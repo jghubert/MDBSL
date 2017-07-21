@@ -18,6 +18,7 @@
 #include <iostream>
 #include "Model.hpp"
 #include "BabblingStandard.h"
+#include "GaussianProcess.h"
 
 //#define USE_FANN
 #ifdef USE_FANN
@@ -38,6 +39,15 @@ namespace MDB_Social {
 #endif            
         }
         
+        static Model* getGaussianProcess() {
+#ifdef USE_GAUSSIAN_PROCESS
+            return new GaussianProcess();
+#else
+            std::cerr << "Model Library Error: getGaussianProcess has no model to propose. Compile with the GAUSSIAN_PROCESS option to use the libgp library." << std::endl;
+            return NULL;
+#endif
+        }
+        
         static Model* getBabblingStandard() {
             return new BabblingStandard();
         }
@@ -49,6 +59,9 @@ namespace MDB_Social {
             }
             else if (type == "BabblingStandard") {
                 return getBabblingStandard();
+            }
+            else if (type == "GaussianProcess") {
+                return getGaussianProcess();
             }
             else
                 return NULL;
