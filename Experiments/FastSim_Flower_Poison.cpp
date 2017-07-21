@@ -89,6 +89,9 @@ namespace MDB_Social {
 #endif        
     }
     
+    
+    
+    
     bool stringToVector(std::string& str, std::vector<unsigned>& ret)
     {
         bool ok = true;
@@ -153,7 +156,7 @@ namespace MDB_Social {
 //        settings->registerParameter<double>("experiment.diameterTarget", 1.0, "Diameter of the target zone");
         settings->registerParameter<double>("experiment.diameterFlower", 5.0, "Diameter of the flowers");
         settings->registerParameter<double>("experiment.diameterPoison", 5.0, "Diameter of the poisons");
-        settings->registerParameter<unsigned>("experiment.nbFlowerType", 1, "Number of flower types available in the environment.");
+        settings->registerParameter<unsigned>("experiment.nbFlowerType", 2, "Number of flower types available in the environment.");
 //        settings->registerParameter<unsigned>("experiment.nbFlowerPerType", 1, "Number of flowers for each type.");
         settings->registerParameter<unsigned>("experiment.nbPoisonType", 1, "Number of poison types available in the environment.");
 //        settings->registerParameter<unsigned>("experiment.nbPoisonPerType", 1, "Number of poison sources for each type.");
@@ -231,13 +234,22 @@ namespace MDB_Social {
             exit(1);
         }
         
+        
+    
         // Parsing the flower and poison types strings.
         if ( !( stringToVector(stFlowerTypes, nbFlowerTypes) && stringToVector(stPoisonTypes, nbPoisonTypes) ) ) {
             std::cerr << "FastSim_Flower_Poison : ERROR with type description. A non numeral has been detected." << std::endl;
             exit(1);
         }
+        
+        // JACQ: easier to put string in vector
+        std::istringstream is( stFlowerTypes );
+        nbFlowerTypes.assign( std::istream_iterator<int>( is ), std::istream_iterator<int>() );
+        
+
         nbFlowerType = nbFlowerTypes.size();
         nbPoisonType = nbPoisonTypes.size();
+        
 
         flowerList.resize(nbFlowerType);
         for (unsigned i=0; i<nbFlowerType; ++i)
@@ -840,6 +852,7 @@ namespace MDB_Social {
         bool useValueFunction = !recommendBabbling && !useOnlyTrueReward;
         bool useBabbling = useOnlyBabbling || this->recommendBabbling;
         double lreward;
+        double greward;
         unsigned epoch;
         unsigned index;
         
@@ -856,7 +869,11 @@ namespace MDB_Social {
         double robotDiameter = world->getRobot()->get_radius() * 2.0;
         
         std::vector<unsigned> flowerCounts(nbFlowerType, 0.0);
+        std::vector<unsigned> flowerCountsBU(nbFlowerType, 0.0);
+
         std::vector<unsigned> poisonCounts(nbPoisonType, 0.0);
+        std::vector<unsigned> poisonCountsBU(nbPoisonType, 0.0);
+        
         for (unsigned trial = 0; trial < trialCount; ++trial) {
             controller->reset();
             relocateRobot();
@@ -872,6 +889,7 @@ namespace MDB_Social {
 #endif            
                         
             lreward = 0.0;
+            greward = 0.0;
             for (epoch = 0; epoch < epochCount; ++epoch) {
                 double robotX = world->getRobot()->get_pos().get_x();
                 double robotY = world->getRobot()->get_pos().get_y();
@@ -987,10 +1005,48 @@ namespace MDB_Social {
                     lreward += std::max((double)reward, trace.estimated_reward);
                 else
                     lreward += (double)reward;
+            
+
+                
                 // need to compute the fitness now. Normally it should be the VF, but we don't have VF now...
             }
+            
+            // this flag is to test quickly whether we can avoid specialistation. Set to 0 if you don't want to use this
+            int booleanSpecialise = 0;
+            
+            if (booleanSpecialise==1){
+            
+                flowerCountsBU[0] = flowerCounts[0] - flowerCountsBU[0];
+                flowerCountsBU[1] = flowerCounts[1] - flowerCountsBU[1];
+                poisonCountsBU[0] = poisonCounts[0] - poisonCountsBU[0];
+            
+                if(flowerCountsBU[0]>=flowerCountsBU[1]){
+                    greward = flowerCountsBU[1]*2;
+                } else {
+                    greward = flowerCountsBU[0]*2;
+                }
+            
+                greward -= poisonCountsBU[0];
+            
+                flowerCountsBU[0] = flowerCounts[0];
+                flowerCountsBU[1] = flowerCounts[1];
+                poisonCountsBU[0] = poisonCounts[0];
+            
+            
+                if(nbFlowerTypes[0]==0 || nbFlowerTypes[1]==0){
+                    greward = lreward;
+                }
+            
+            } else {
+                greward = lreward;
+            }
+            
+            
+            rewardTotal += greward;
+            
+            
             if (testIndividual) {
-                std::cout << "Trial " << trial << " : total reward = " << lreward << " for " << epoch << " timesteps" << std::endl;
+                std::cout << "Trial " << trial << " : total reward = " << greward << " for " << epoch << " timesteps" << std::endl;
                 std::cout << "    Flowers picked per type: ";
                 for (unsigned t=0; t<nbFlowerType; ++t)
                     std::cout << t << " = " << flowerCounts[t] << "; ";
@@ -1001,7 +1057,12 @@ namespace MDB_Social {
                 std::cout << std::endl;
                 
             }
-            rewardTotal += lreward;
+            
+            
+            //rewardTotal += lreward;
+           
+           
+            
             
         }
 
