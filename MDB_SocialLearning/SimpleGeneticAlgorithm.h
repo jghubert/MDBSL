@@ -75,6 +75,7 @@ namespace MDB_Social {
         unsigned generationStep;
         SelectionAlgorithm selectionAlgorithm;
         unsigned elitism;
+        bool logPhylogeneticTree;
         
         //! Internal variable for Tournament Selection : Pool of remaining individuals
 //        std::vector<unsigned> tourRandVect;
@@ -89,6 +90,7 @@ namespace MDB_Social {
         unsigned currentGeneration;
         
         std::ofstream logfile;
+        std::ofstream phylogeneticFile;
         
         SelectionAlgorithm identifySelectionAlgorithm(const std::string& selection) const;
         void createPopulation();

@@ -170,6 +170,20 @@ namespace MDB_Social {
 
         std::string logname = workingDirectory + "/SimpleGeneticAlgorithm.log";
         logfile.open(logname, std::ios_base::app);
+        if (!logfile.is_open()) {
+            std::cerr << "SimpleGeneticAlgorithm: ERROR: Impossible to open the log file " << logname << std::endl;
+            exit(1);
+        }
+
+        if (logPhylogeneticTree) {
+            logname = workingDirectory + "/SimpleGeneticAlgorithm.PhylogeneticTree.log";
+            phylogeneticFile.open(logname, std::ios_base::app);
+            if (!phylogeneticFile.is_open()) {
+                std::cerr << "SimpleGeneticAlgorithm: ERROR: Impossible to open the phylogenetic log file " << logname << std::endl;
+                exit(1);
+            }
+        }
+
         
         std::cout << "Starting evolution for " << maxGenerationCount << " generations." << std::endl;
         std::cout << "    Current generations :";
@@ -206,6 +220,8 @@ namespace MDB_Social {
         std::cout << "DONE" << std::endl;
         
         logfile.close();
+        if (logPhylogeneticTree)
+            phylogeneticFile.close();
         
         return currentGeneration == maxGenerationCount;
     }
@@ -422,6 +438,8 @@ namespace MDB_Social {
             
 //            newPopulation[i] = population[mother]->clone();
             newPopulation[i]->copy(population[mother]);
+            if (logPhylogeneticTree)
+                phylogeneticFile << currentGeneration << " " << newPopulation[i]->getUUID() << " " << population[mother]->getUUID();
 
             if ((*ug)() < reproductionProbability) {
                 do
@@ -429,7 +447,11 @@ namespace MDB_Social {
                 while (father == mother);
 
                 newPopulation[i]->cross(population[father], crossoverSize);
+                if (logPhylogeneticTree)
+                    phylogeneticFile << " " << population[father]->getUUID();
             }
+            if (logPhylogeneticTree)
+                phylogeneticFile << std::endl;
         }
         
         // delete the old individuals and replace them with the new ones
@@ -460,6 +482,7 @@ namespace MDB_Social {
         settings->registerParameter<double>("SimpleGeneticAlgorithm.reproductionProbability", 1.0, "SimpleGeneticAlgorithm: Probability of using sexual reproduction.");
         settings->registerParameter<unsigned>("SimpleGeneticAlgorithm.elitism", 0, "SimpleGeneticAlgorithm: Number of individuals to copy to the next generation.");
         settings->registerParameter<std::string>("SimpleGeneticAlgorithm.selectionAlgorithm", std::string("tournament"), "SimpleGeneticAlgorithm: Algorithm for the selection (tournament, roulette_wheel.");
+        settings->registerParameter<bool>("SimpleGeneticAlgorithm.logPhylogeneticTree", false, "SimpleGeneticAlgorithm: log the phylogenetic tree of the evolution.");
     }
     
     void SimpleGeneticAlgorithm::loadParameters()
@@ -482,7 +505,7 @@ namespace MDB_Social {
         elitism = settings->value<unsigned>("SimpleGeneticAlgorithm.elitism").second;
         std::string selection = settings->value<std::string>("SimpleGeneticAlgorithm.selectionAlgorithm").second;
         selectionAlgorithm = identifySelectionAlgorithm(selection);
-        
+        logPhylogeneticTree = settings->value<bool>("SimpleGeneticAlgorithm.logPhylogeneticTree").second;
     }
 
     SimpleGeneticAlgorithm::SelectionAlgorithm SimpleGeneticAlgorithm::identifySelectionAlgorithm(const std::string& selection) const
