@@ -29,7 +29,7 @@ namespace MDB_Social {
         int inputDimensionality;
         std::string covarianceFunction;
         
-        Memory<weight_t>* externalMemory;
+        Memory<NeuralNetworkData>* externalMemory;
     public:
         GaussianProcess();
         virtual ~GaussianProcess();

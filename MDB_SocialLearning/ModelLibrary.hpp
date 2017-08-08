@@ -18,7 +18,10 @@
 #include <iostream>
 #include "Model.hpp"
 #include "BabblingStandard.h"
+
+#ifdef USE_GAUSSIAN_PROCESS
 #include "GaussianProcess.h"
+#endif
 
 //#define USE_FANN
 #ifdef USE_FANN

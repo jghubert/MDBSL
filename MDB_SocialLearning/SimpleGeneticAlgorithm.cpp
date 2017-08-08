@@ -415,7 +415,7 @@ namespace MDB_Social {
         
         for (unsigned i=0; i<elitism; ++i) {
             newPopulation[i]->copy(population[i]);
-            newPopulation[i]->regenerateUUID();
+//            newPopulation[i]->regenerateUUID();
             if (logPhylogeneticTree)
                 phylogeneticFile << currentGeneration << " " << newPopulation[i]->getUUID() << std::endl;
         }
