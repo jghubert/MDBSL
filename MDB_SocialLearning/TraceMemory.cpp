@@ -165,5 +165,34 @@ namespace MDB_Social {
         Memory<Trace>::push_back(d);
     }
     
+    std::vector<std::pair<unsigned, Memory<Trace>::iterator> > TraceMemory::countIndependentTraces()
+    {
+        std::vector<std::pair<unsigned, Memory<Trace>::iterator> > ret;
+        unsigned count = 0;
+
+        if (this->size() > 0) {
+            TraceMemory::iterator it = this->begin();
+            TraceMemory::iterator itend = end();
+            TraceMemory::iterator itlast = it;
+            
+            boost::uuids::uuid currentid = it->uuid;
+            count++;
+            it++;
+            
+            for (; it != itend; ++it) {
+                if (it->uuid != currentid) {
+                    ret.push_back(std::make_pair(count, itlast));
+                    count = 0;
+                    currentid = it->uuid;
+                }
+                else
+                    count++;
+                itlast = it;
+            }
+            ret.push_back(std::make_pair(count, itend));
+        }
+        return ret;
+    }
+ 
     
 }

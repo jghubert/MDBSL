@@ -54,6 +54,7 @@ namespace MDB_Social {
         traceMemoryMaximumSize = 0;
         deactivateValueFunction = false;
         deactivateBabbling = false;
+        doNotLoadValueFunctionToMemory = false;
         
     }
     
@@ -166,6 +167,7 @@ namespace MDB_Social {
         settings->registerParameter<unsigned>("General.traceMemoryMaximumSize", 0, "Maximum size for the trace memory (0 = unlimited).");
         settings->registerParameter<bool>("General.deactivateValueFunction", false, "Do not use the value function if set to true.");
         settings->registerParameter<bool>("General.deactivateBabbling", false, "Do not use babbling if set to true.");
+        settings->registerParameter<bool>("General.doNotLoadValueFunctionToMemory", false, "Do not load the value function from the memory file. It must then be handle by the value function itself.");
 //        settings->registerParameter<std::string>("General.workingDirectory", std::string("."), "Set the working directory of the robot. In social mode, the default is the ID of the robot.");
         
         settings->registerParameter<int>("General.experimentCycles", 0, "Number of cycles of controller-value function optimization to run.");
@@ -194,6 +196,7 @@ namespace MDB_Social {
         deactivateValueFunction = settings->value<bool>("General.deactivateValueFunction").second;
         deactivateBabbling = settings->value<bool>("General.deactivateBabbling").second;
         experimentCycles = settings->value<int>("General.experimentCycles").second;
+        doNotLoadValueFunctionToMemory = settings->value<bool>("General.doNotLoadValueFunctionToMemory").second;
 //        workingDirectory = settings->value<std::string>("General.workingDirectory").second;
 //        if (workingDirectory.back() == '/')
 //            workingDirectory.erase(workingDirectory.size()-1);
@@ -386,15 +389,17 @@ namespace MDB_Social {
         std::string filename;
         std::string cwd = resourceLibrary->getWorkingDirectory();
         
-        if ((testIndividual && !testIndividualNoValueFunction)) {
-            filename = cwd + "/" + logFilenamePrefix + ".value_function.step_" + std::to_string(generation) + ".log";
-            if (!vfMemory->loadFromFile(filename.c_str())) {
-                std::cerr << "Manager::loadMemoriesFromFiles: An error occurred when loading the value function from the file " << filename << std::endl;
-                return false;
-            }
-            else {
-                std::cout << "Value Function ; ";
-                vf->loadFromExternalMemory();
+        if (!doNotLoadValueFunctionToMemory) {    // Yeah it's ugly, but I'm tired.
+            if ((testIndividual && !testIndividualNoValueFunction)) {
+                filename = cwd + "/" + logFilenamePrefix + ".value_function.step_" + std::to_string(generation) + ".log";
+                if (!vfMemory->loadFromFile(filename.c_str())) {
+                    std::cerr << "Manager::loadMemoriesFromFiles: An error occurred when loading the value function from the file " << filename << std::endl;
+                    return false;
+                }
+                else {
+                    std::cout << "Value Function ; ";
+                    vf->loadFromExternalMemory();
+                }
             }
         }
         

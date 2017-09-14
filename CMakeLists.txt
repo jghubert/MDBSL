@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 2.8.3)
 project (MDB_SocialLearning CXX)
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (NOT DEFINED fitnesses)
     message(FATAL_ERROR "No fitnesses provided. Cannot proceed further. Use -Dfitnesses:string=\"...\" to provide at least one. ")
@@ -11,15 +12,16 @@ endif ()
 OPTION(USE_ECF "Compile with Evolutionary Computation Framework." OFF)
 OPTION(USE_FANN "Compile with FANN." ON)
 OPTION(USE_GAUSSIAN_PROCESS "Compile with support Gaussian process. Requires the libgp library." OFF)
+OPTION(USE_CAFFE "Compile with Caffe, a library providing Deep Neural Network models." OFF)
 OPTION(USE_FASTSIM "Compile with FastSim." ON)
 OPTION(USE_FASTSIM_VIEWER "Compile with the support for FastSim viewer." OFF)
 OPTION(USE_REV "Compile with the Robot Experiment Viewer." OFF)
 #OPTION(USE_ANN "Compile with ANN, library for computing nearest neighbour point in a set." ON)
 OPTION(USE_MLPACK "Compile with MLPack. It provides the functions for computing knn in a set." ON)
-
+OPTION(COMPILE_TESTS "Compile the tests." OFF)
 
 # set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -ggdb -Wall -std=c++11)
-add_definitions(-ggdb -Wall -DSEPARATOR=" ")
+add_definitions(-g -Wall -DMDBSL_FIELD_SEPARATOR=" ")
 # -std=c++11
 
 set(Boost_USE_STATIC_LIBS OFF) 
@@ -62,6 +64,24 @@ if (USE_GAUSSIAN_PROCESS)
     endif (GP)
 endif (USE_GAUSSIAN_PROCESS)
 
+if (USE_CAFFE)
+    find_package (Caffe REQUIRED)
+    if(APPLE)
+        FIND_LIBRARY(BLAS_LIBRARY BLAS)
+        MARK_AS_ADVANCED(BLAS_LIBRARY)
+        SET(BLAS_INCLUDE_DIR /System/Library/Frameworks/Accelerate.framework/Versions/Current/Frameworks/vecLib.framework/Versions/Current/Headers/cblas.h
+/System/Library/Frameworks/Accelerate.framework/Versions/Current/Frameworks/vecLib.framework/Versions/Current/Headers)
+        add_definitions (-DUSE_ACCELERATE)
+    else(APPLE)
+        find_package (BLAS REQUIRED)
+    endif(APPLE)
+    INCLUDE_DIRECTORIES( &{BLAS_INCLUDE_DIR} )
+    INCLUDE_DIRECTORIES( ${Caffe_INCLUDE_DIRS} )
+    message ("Found BLAS library: ${BLAS_INCLUDE_DIR} ; Libraries = ${BLAS_LIBRARY}")
+    set(EXTERNAL_LIBRARIES ${EXTERNAL_LIBRARIES} ${Caffe_LIBRARIES} ${BLAS_LIBRARY})
+    add_definitions(-DCPU_ONLY -DUSE_CAFFE)
+endif (USE_CAFFE)
+
 if (USE_FASTSIM)
     set(EXTERNAL_LIBRARIES ${EXTERNAL_LIBRARIES} ${PROJECT_SOURCE_DIR}/MDB_SocialLearning/fastsim/lib/libfastsim.a)
     add_definitions(-DUSE_FASTSIM)
@@ -102,10 +122,20 @@ if (USE_MLPACK)
     endif (LIBMLPACK)
 endif (USE_MLPACK)
 
+if (COMPILE_TESTS)
+    find_package(GTEST REQUIRED)
+    include_directories(${GTEST_INCLUDE_DIRS})
+#    add_subdirectory (Tests)
+endif (COMPILE_TESTS)
+
+
 message("PROJECT_SOURCE_DIR = ${PROJECT_SOURCE_DIR}" )
 
 include_directories ("${PROJECT_SOURCE_DIR}/MDB_SocialLearning")
 add_subdirectory (MDB_SocialLearning)
+if (COMPILE_TESTS)
+    add_subdirectory (Tests)
+endif (COMPILE_TESTS)
 
 
 

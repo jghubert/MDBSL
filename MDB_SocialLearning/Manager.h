@@ -73,7 +73,7 @@ namespace MDB_Social {
         int generationToTest;
         bool testIndividualNoValueFunction;
         bool testIndividualNoTrace;
-        
+        bool doNotLoadValueFunctionToMemory;
         unsigned traceMemoryMaximumSize;
         
         bool deactivateValueFunction;

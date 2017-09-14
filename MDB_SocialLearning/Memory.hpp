@@ -25,7 +25,7 @@ namespace MDB_Social {
 
         friend std::ostream& operator<<(std::ostream& output, const NeuralNetworkData& T)
         {
-            output << T.from << SEPARATOR << T.to << SEPARATOR << T.weight;
+            output << T.from << MDBSL_FIELD_SEPARATOR << T.to << MDBSL_FIELD_SEPARATOR << T.weight;
             return output;
         }
         

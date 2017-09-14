@@ -42,6 +42,11 @@ namespace MDB_Social {
             UNDEFINED    // Used to deactivate the function and cause an error.
         };
 
+        enum LearningMode {
+            SEQUENCE = 0,   // Learn the sequences by keeping the traces from different robots separated.
+            RANDOM = 1
+        };
+        
     private:
         Settings* settings;
         ResourceLibraryData* resourceLibrary;
@@ -67,6 +72,7 @@ namespace MDB_Social {
         bool useOnlyRewardedTraces;
         double rewardThreshold;
         unsigned vfMergingMode;
+        unsigned learningMode;
 
         bool compressTraceMemoryFlag;
         

@@ -33,7 +33,9 @@ namespace MDB_Social {
         useOnlyRewardedTraces = false;
         rewardThreshold = 0.0;
         vfMergingMode = UNDEFINED;
+        learningMode = RANDOM;
         famtester = NULL;
+        outputs.resize(1, 0);
     }
 
     ValueFunction::~ValueFunction() 
@@ -51,7 +53,7 @@ namespace MDB_Social {
     void ValueFunction::loadParameters()
     {
 //        Settings* settings = Settings::getInstance();
-        valueFunctionType = settings->value<std::string>("ValueFunctionType").second;
+        valueFunctionType = settings->value<std::string>("ValueFunction.type").second;
         
         std::string qualityMeasureStr = settings->value<std::string>("ValueFunction.qualityMeasure").second;
         if (qualityMeasureStr == "SIMPLE_RATIO")
@@ -85,12 +87,22 @@ namespace MDB_Social {
             exit(1);
         }
         
+        std::string learningModeStr = settings->value<std::string>("ValueFunction.learningMode").second;
+        if (learningModeStr == "RANDOM")
+            learningMode = RANDOM;
+        else if (learningModeStr == "SEQUENCE")
+            learningMode = SEQUENCE;
+        else {
+            std::cerr << "ValueFunction: Unknown learning mode selected: " << learningModeStr << std::endl;
+            exit(1);
+        }
+        
     }
 
     void ValueFunction::registerParameters()
     {
 //        Settings* settings = Settings::getInstance();
-        if (settings->registerAndRetrieveParameter<std::string>(valueFunctionType, "ValueFunctionType", std::string("Feedforward"), "Type of the value function to use")) {
+        if (settings->registerAndRetrieveParameter<std::string>(valueFunctionType, "ValueFunction.type", std::string("Feedforward"), "Type of the value function to use")) {
             vf = ModelLibrary::getModel(valueFunctionType);
 //            vf->setID(robotid);
             vf->setExternalMemory((Memory<NeuralNetworkData>*)resourceLibrary->getValueFunctionMemory());
@@ -104,6 +116,7 @@ namespace MDB_Social {
         
         settings->registerParameter<bool>("ValueFunction.useOnlyRewardedTraces", false, "Value function: Use only rewarded traces for learning.");
         settings->registerParameter<double>("ValueFunction.rewardThreshold", 0.0, "Value function: Minimum reward of a trace to be included in the learning set.");
+        settings->registerParameter<std::string>("ValueFunction.learningMode", std::string("RANDOM"), "RANDOM: traces are mixed; SEQUENCE: traces are temporal sequences that should not be mixed.");
     }
 
     bool ValueFunction::initialise()
@@ -230,6 +243,77 @@ namespace MDB_Social {
 //                }
                 nn->train();
             }
+#ifdef USE_CAFFE
+            else if (valueFunctionType == "CaffeDeepNet") {
+                std::cout << "ValueFunction: Learning " << tm->size() << " patterns..." << std::endl;
+                CaffeDeepNet* nn = static_cast<CaffeDeepNet*>(vf);
+                
+                TraceMemory::const_iterator it = tm->begin();
+                std::vector<double> inputs;
+                std::vector<double> outputs;
+
+                if (learningMode == RANDOM) {
+                    inputs.reserve(((*it).inputs.size() + (*it).outputs.size()) * tm->size() );
+                    outputs.reserve(tm->size());
+
+                    if (!useOnlyRewardedTraces) { 
+                        for (it = tm->begin(); it != tm->end(); ++it) {
+                            for (size_t i = 0; i<it->inputs.size(); ++i)
+                                inputs.push_back(it->inputs[i]);
+    //                        for (size_t i = 0; i<it->outputs.size(); ++i)
+    //                            inputs.push_back(outputs[i]);
+                            outputs.push_back(it->expected_reward);
+                        }
+                        nn->setTrainingSet(tm->size(), inputs, outputs);
+                    }                
+                    else {
+                        unsigned index = 0;
+                        for (it = tm->begin(); it != tm->end(); ++it) {
+                            if (mask[index++]) {
+                                for (size_t i = 0; i<it->inputs.size(); ++i)
+                                    inputs.push_back(it->inputs[i]);
+    //                            for (size_t i = 0; i<it->outputs.size(); ++i)
+    //                                inputs.push_back(outputs[i]);
+                                outputs.push_back(it->expected_reward);
+                            }
+                        }
+                        nn->setTrainingSet(selectedTraces, inputs, outputs);
+                    }
+                    nn->train();
+                }
+                else if (learningMode == SEQUENCE) {
+                    std::vector<std::pair<unsigned, TraceMemory::iterator> > traceInfo = tm->countIndependentTraces();
+                    unsigned nbtraces = traceInfo.size();
+                    std::vector<std::vector<std::vector<double> > > input_seq(nbtraces);
+                    std::vector<std::vector<std::vector<double> > > output_seq(nbtraces);
+                    
+                    auto itend = tm->end();
+                    for (unsigned s=0; s<nbtraces; ++s) {
+                        input_seq[s].resize(traceInfo[s].first);
+                        output_seq[s].resize(traceInfo[s].first);
+                        if (s+1 < nbtraces)
+                            itend = traceInfo[s+1].second;
+                        else
+                            itend = tm->end();
+                        
+                        unsigned index = 0;
+                        for (auto it = traceInfo[s].second; it != itend; ++it) {
+                            input_seq[s][index] = it->inputs;
+                            output_seq[s][index] = it->outputs;
+                            index++;
+                        }
+                    }
+                    nn->trainSequentially(input_seq, output_seq);
+                    
+                    
+                }
+                
+            }
+#endif
+            else {
+                std::cerr << "ValueFunction::update: Unknown value function type: " << valueFunctionType << std::endl;
+                exit(1);
+            }
         }
         std::cout << "    Learning completed." << std::endl;
     }
@@ -277,6 +361,46 @@ namespace MDB_Social {
             
             return localOutput;
         }
+#ifdef USE_CAFFE
+        else if (valueFunctionType == "CaffeDeepNet") {
+            CaffeDeepNet* nn = static_cast<CaffeDeepNet*>(vf);
+
+            for (unsigned i=0; i<insize; ++i)
+                inputs[i] = t.inputs[i];
+//            for (unsigned i=0; i<outsize; ++i)
+//                inputs[insize+i] = t.outputs[i];
+
+            nn->run(1, inputs, outputs);
+            double localOutput = outputs[0];
+            
+            if (additionalVFs.size()) {
+                std::valarray<double> estimations(additionalVFs.size());
+                unsigned index = 0;
+                for (auto it = additionalVFs.begin(); it != additionalVFs.end(); ++it) {
+                    static_cast<FeedforwardNN*>(*it)->run(inputs,outputs);
+                    estimations[index++] = outputs[0];
+                }
+                
+                switch (vfMergingMode) {
+                    case AVERAGE:
+                        localOutput = (localOutput + estimations.sum()) / (estimations.size() + 1);
+                        break;
+                    case SUM:
+                        localOutput += estimations.sum();
+                        break;
+                    case UNDEFINED:
+                        std::cerr << "ValueFunction: ERROR: The merging mode is set to UNDEFINED. Ignoring the additional value functions." << std::endl;
+                        break;
+                    default:
+                        std::cerr << "ValueFunction: ERROR: The merging mode is not unknown." << std::endl;
+                        exit(1);
+                }
+            }
+            
+            return localOutput;
+            
+        }
+#endif   // USE_CAFFE
         else {
             std::cerr << "ValueFunction::estimateTrace: Unknown value function type: " << valueFunctionType << std::endl;
             return -1.0;

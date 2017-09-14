@@ -24,8 +24,8 @@
 #include <typeinfo>
 #include "colormod.hpp"
 
-#ifndef SEPARATOR
-#define SEPARATOR " "
+#ifndef MDBSL_FIELD_SEPARATOR
+#define MDBSL_FIELD_SEPARATOR " "
 #endif
 
 namespace MDB_Social {

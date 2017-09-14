@@ -49,10 +49,10 @@ namespace MDB_Social {
         Genotype& operator= (Genotype& G);
         friend std::ostream& operator<<(std::ostream &output, const Genotype& G)
         {
-            output << G.fitness << SEPARATOR << G.genes.size();
+            output << G.fitness << MDBSL_FIELD_SEPARATOR << G.genes.size();
             for (size_t i=0; i<G.genes.size(); ++i)
-                output << SEPARATOR << G.genes[i];
-            output << SEPARATOR << G.id;
+                output << MDBSL_FIELD_SEPARATOR << G.genes[i];
+            output << MDBSL_FIELD_SEPARATOR << G.id;
             return output;
         }
         

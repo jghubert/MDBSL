@@ -39,6 +39,9 @@ if (USE_REV)
     set (MDB_SocialLearning_LIB_SOURCES ${MDB_SocialLearning_LIB_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../RobotExperimentViewer/RobotExperimentViewer/rev.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../RobotExperimentViewer/RobotExperimentViewer/revinit.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../RobotExperimentViewer/RobotExperimentViewer/revinputviewer.cpp)
 endif (USE_REV)
 
+if (USE_CAFFE)
+    set (MDB_SocialLearning_LIB_SOURCES ${MDB_SocialLearning_LIB_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/CaffeDeepNet.cpp)
+endif (USE_CAFFE)
 
 #Generate FitnessLibrary.hpp
 # add_definitions (-ggdb -Wall -std=c++11 -L/usr/local/bin -lstdc++)

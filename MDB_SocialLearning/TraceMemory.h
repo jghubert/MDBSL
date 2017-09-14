@@ -54,15 +54,15 @@ namespace MDB_Social {
         {
             output << T.inputs.size();
             for (unsigned i=0; i<T.inputs.size(); ++i)
-                output << SEPARATOR << T.inputs[i];
-            output << SEPARATOR << T.inputs_t1.size();
+                output << MDBSL_FIELD_SEPARATOR << T.inputs[i];
+            output << MDBSL_FIELD_SEPARATOR << T.inputs_t1.size();
             for (unsigned i=0; i<T.inputs_t1.size(); ++i)
-                output << SEPARATOR << T.inputs_t1[i];
-            output << SEPARATOR << T.outputs.size();
+                output << MDBSL_FIELD_SEPARATOR << T.inputs_t1[i];
+            output << MDBSL_FIELD_SEPARATOR << T.outputs.size();
             for (unsigned i=0; i<T.outputs.size(); ++i)
-                output << SEPARATOR << T.outputs[i];
-            output << SEPARATOR << T.true_reward << SEPARATOR << T.expected_reward << SEPARATOR << T.estimated_reward << SEPARATOR << T.reliability
-                    << SEPARATOR << T.usedForVFTraining << SEPARATOR << T.uuid;
+                output << MDBSL_FIELD_SEPARATOR << T.outputs[i];
+            output << MDBSL_FIELD_SEPARATOR << T.true_reward << MDBSL_FIELD_SEPARATOR << T.expected_reward << MDBSL_FIELD_SEPARATOR << T.estimated_reward << MDBSL_FIELD_SEPARATOR << T.reliability
+                    << MDBSL_FIELD_SEPARATOR << T.usedForVFTraining << MDBSL_FIELD_SEPARATOR << T.uuid;
             
 //            std::cout << "Trace::operator<< : uuid = " << T.uuid << std::endl;
             
@@ -141,6 +141,8 @@ namespace MDB_Social {
         
         virtual void push_front(Trace& d) override;
         virtual void push_back(Trace& d) override;
+        
+        std::vector<std::pair<unsigned, Memory<Trace>::iterator> > countIndependentTraces();
         
         
     };

@@ -18,6 +18,7 @@
 #include <iostream>
 #include "Model.hpp"
 #include "BabblingStandard.h"
+#include "CaffeDeepNet.h"
 
 #ifdef USE_GAUSSIAN_PROCESS
 #include "GaussianProcess.h"
@@ -28,6 +29,9 @@
 #include "FeedforwardNN.h"
 #endif
 
+#ifdef USE_CAFFE
+#include "CaffeDeepNet.h"
+#endif
 
 namespace MDB_Social {
     
@@ -46,8 +50,18 @@ namespace MDB_Social {
 #ifdef USE_GAUSSIAN_PROCESS
             return new GaussianProcess();
 #else
-            std::cerr << "Model Library Error: getGaussianProcess has no model to propose. Compile with the GAUSSIAN_PROCESS option to use the libgp library." << std::endl;
+            std::cerr << "Model Library Error: getGaussianProcess has no model to propose. Compile with the USE_GAUSSIAN_PROCESS option to use the libgp library." << std::endl;
             return NULL;
+#endif
+        }
+        
+        static Model* getCaffeDeepNet() {
+#ifdef USE_CAFFE
+            return new CaffeDeepNet();
+#else
+            std::cerr << "Model Library Error: getCaffeDeepNet has no model to propose. Compile with the USE_CAFFE option to use the Caffe library." << std::endl;
+            return NULL;
+            
 #endif
         }
         
@@ -65,6 +79,9 @@ namespace MDB_Social {
             }
             else if (type == "GaussianProcess") {
                 return getGaussianProcess();
+            }
+            else if (type == "CaffeDeepNet") {
+                return getCaffeDeepNet();
             }
             else
                 return NULL;

@@ -11,7 +11,7 @@
  * Created on April 24, 2017, 3:25 PM
  */
 
-#define SEPARATOR " "
+#define MDBSL_FIELD_SEPARATOR " "
 
 #include <cstdlib>
 #include "../MDB_SocialLearning/FeedforwardNN.h"
