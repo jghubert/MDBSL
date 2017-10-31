@@ -18,7 +18,6 @@
 #include <iostream>
 #include "Model.hpp"
 #include "BabblingStandard.h"
-#include "CaffeDeepNet.h"
 
 #ifdef USE_GAUSSIAN_PROCESS
 #include "GaussianProcess.h"

@@ -291,7 +291,7 @@ namespace MDB_Social {
                     for (unsigned s=0; s<nbtraces; ++s) {
                         input_seq[s].resize(traceInfo[s].first);
                         output_seq[s].resize(traceInfo[s].first);
-                        if (s+1 < nbtraces)
+                        if (s+1 <= nbtraces)
                             itend = traceInfo[s+1].second;
                         else
                             itend = tm->end();
